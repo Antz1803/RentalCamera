@@ -97,7 +97,7 @@ export default function PaymentProcessingView({ c }) {
           <img
             src={qrCode}
             alt="InstaPay QR code"
-            style={{ width: 160, height: 160, objectFit: "contain" }}
+            style={{ width: 360, height: 360, objectFit: "contain" }}
           />
           <div
             style={{
@@ -128,7 +128,7 @@ export default function PaymentProcessingView({ c }) {
         <input
           value={c.referenceNo}
           onChange={(e) => c.setReferenceNo(e.target.value)}
-          placeholder="e.g. INST-2024-0815-3392"
+          placeholder="Enter the reference number from your digital payment."
           style={{ ...inputStyle, marginBottom: 18 }}
         />
 

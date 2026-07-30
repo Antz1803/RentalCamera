@@ -36,7 +36,8 @@ export default function BookingFormPanel({ c }) {
             value={c.contact}
             onChange={(e) => c.setContact(e.target.value)}
             style={inputStyle}
-            placeholder="+1-555-000-0000"
+            placeholder="09999324243"
+            maxLength={11}
           />
         </Field>
 
@@ -106,7 +107,7 @@ export default function BookingFormPanel({ c }) {
             >
               {c.cameras.map((cam) => (
                 <option key={cam.name} value={cam.name}>
-                  {cam.name}
+                  {cam.name} ({cam.quantity} available)
                 </option>
               ))}
             </select>

@@ -125,7 +125,7 @@ export default function ReceiptModal({ c }) {
               className="rounded-lg mt-4"
               style={{
                 width: "100%",
-                maxHeight: 140,
+                Height: "100%",
                 objectFit: "cover",
                 border: `1px solid ${COLORS.border}`,
               }}

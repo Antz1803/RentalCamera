@@ -67,14 +67,18 @@ export default function CalendarPanel({ c }) {
           const key = toKey(c.viewYear, c.viewMonth, d);
           const booked = c.isDateBooked(key);
           const bookedLabel = booked ? c.getBookingLabel(key) : undefined;
+          const bookedStatus = booked ? c.getBookingStatus(key) : undefined;
+          const isPending = bookedStatus === "Pending";
           const mine = c.isInSelectedRange(key);
           const isEdge = key === c.rangeStart || key === c.rangeEnd;
 
           let bg, textColor, border;
           if (booked) {
-            bg = COLORS.lavender;
+            bg = isPending ? "#bde0fe" : COLORS.lavender;
             textColor = COLORS.lavenderText;
-            border = `1px solid ${COLORS.lavender}`;
+            border = isPending
+              ? `1px dashed ${COLORS.lavenderText}`
+              : `1px solid ${COLORS.lavender}`;
           } else if (mine) {
             bg = isEdge ? COLORS.mustardDark : COLORS.mustard;
             textColor = COLORS.mustardText;
@@ -92,7 +96,13 @@ export default function CalendarPanel({ c }) {
               onClick={() => c.handleDayClick(key)}
               onMouseEnter={() => c.setHoverKey(key)}
               onMouseLeave={() => c.setHoverKey(null)}
-              title={booked ? `Booked — ${bookedLabel ?? "reserved"}` : undefined}
+              title={
+                booked
+                  ? isPending
+                    ? `Waiting for confirmation — ${bookedLabel ?? "reserved"}`
+                    : `Booked — ${bookedLabel ?? "reserved"}`
+                  : undefined
+              }
               style={{
                 height: cellSize,
                 background: bg,
@@ -104,7 +114,7 @@ export default function CalendarPanel({ c }) {
                 fontSize: 14,
                 position: "relative",
                 transition: "transform 120ms ease, filter 120ms ease",
-                opacity: booked ? 0.85 : 1,
+                opacity: booked ? (isPending ? 0.7 : 0.85) : 1,
               }}
               className="flex flex-col items-center justify-center"
               onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.94)")}
@@ -140,6 +150,11 @@ export default function CalendarPanel({ c }) {
         <LegendDot color={COLORS.sage} label="Available slots" />
         <LegendDot color={COLORS.mustard} label="My reservation" />
         <LegendDot color={COLORS.lavender} label="Booked" />
+        <LegendDot
+          color="#bde0fe"
+          label="Waiting for confirmation"
+          dashed
+        />
       </div>
     </div>
   );

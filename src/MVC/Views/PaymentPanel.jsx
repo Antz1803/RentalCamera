@@ -4,6 +4,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { COLORS } from "../Models/RentalModel";
+import CameraHighlightCard from "./CameraHighlightCard";
 
 export default function PaymentPanel({ c }) {
   return (
@@ -47,6 +48,10 @@ export default function PaymentPanel({ c }) {
       >
         PROCEED TO SECURE PAYMENT
       </button>
+      {/* Feature Highlight Card */}
+        <div className="mt-3">
+          <CameraHighlightCard />
+        </div>
     </>
   );
 }

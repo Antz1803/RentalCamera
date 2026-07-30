@@ -13,6 +13,7 @@ import {
   buildMonthGrid,
   countDays,
   fromKey,
+  getCameraQuantity,
   toKey,
   validateBooking,
   validatePaymentProof,
@@ -44,16 +45,16 @@ export function useRentalController() {
   const [viewYear, setViewYear] = useState(initial.getFullYear());
   const [viewMonth, setViewMonth] = useState(initial.getMonth());
 
-  const [rangeStart, setRangeStart] = useState("2024-08-15");
-  const [rangeEnd, setRangeEnd] = useState("2024-08-20");
+  const [rangeStart, setRangeStart] = useState(null);
+  const [rangeEnd, setRangeEnd] = useState(null);
   const [hoverKey, setHoverKey] = useState(null);
 
   // =========================
   // CUSTOMER / CAMERA STATE
   // =========================
 
-  const [fullName, setFullName] = useState("Olivia V. Chen");
-  const [contact, setContact] = useState("+1-555-010-2233");
+  const [fullName, setFullName] = useState("");
+  const [contact, setContact] = useState("");
   const [camera, setCamera] = useState(CAMERAS[0].name);
 
   // =========================
@@ -87,11 +88,17 @@ export function useRentalController() {
   // CHECK IF DATE IS BOOKED
   // (scoped to whichever camera is currently selected — a booking on
   // Camera A doesn't block Camera B on the same day)
+  //
+  // Pending bookings count as reserved too, not just Approved ones —
+  // otherwise two customers could both "reserve" the same date while
+  // the first one is still awaiting manual verification.
   // =========================
+
+  const BLOCKING_STATUSES = ["Pending", "Approved"];
 
   function isDateBooked(dateKey) {
     return bookings.some((booking) => {
-      if (booking.status !== "Approved") {
+      if (!BLOCKING_STATUSES.includes(booking.status)) {
         return false;
       }
 
@@ -110,7 +117,7 @@ export function useRentalController() {
 
   function getBookingLabel(dateKey) {
     const match = bookings.find((booking) => {
-      if (booking.status !== "Approved") {
+      if (!BLOCKING_STATUSES.includes(booking.status)) {
         return false;
       }
 
@@ -122,6 +129,27 @@ export function useRentalController() {
     });
 
     return match ? match.fullName : undefined;
+  }
+
+  // =========================
+  // BOOKING STATUS FOR A GIVEN DATE
+  // lets the calendar visually distinguish "Pending" from "Approved"
+  // =========================
+
+  function getBookingStatus(dateKey) {
+    const match = bookings.find((booking) => {
+      if (!BLOCKING_STATUSES.includes(booking.status)) {
+        return false;
+      }
+
+      return (
+        booking.camera === camera &&
+        dateKey >= booking.startDate &&
+        dateKey <= booking.endDate
+      );
+    });
+
+    return match ? match.status : undefined;
   }
 
   // =========================
@@ -454,6 +482,7 @@ export function useRentalController() {
     bookings,
     isDateBooked,
     getBookingLabel,
+    getBookingStatus,
 
     // Form
     fullName,
