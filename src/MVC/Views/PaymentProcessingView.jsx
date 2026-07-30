@@ -1,10 +1,11 @@
 // Views/PaymentProcessingView.jsx
-// Step 2 of the flow: shown after booking details pass validation.
-// Reads/writes only through the controller (`c`) passed in as a prop.
-
 import React, { useRef } from "react";
 import { ArrowLeft, ImageUp, X } from "lucide-react";
-import { COLORS } from "../Models/RentalModel";
+import {
+  COLORS,
+  calculateRentalPrice,
+  formatDisplayDate,
+} from "../Models/RentalModel";
 import { inputStyle } from "./FormBits";
 
 import logo from "../../Images/timer.png";
@@ -40,6 +41,7 @@ function Header() {
 
 export default function PaymentProcessingView({ c }) {
   const fileInputRef = useRef(null);
+  const totalPrice = calculateRentalPrice(c.camera, c.days);
 
   return (
     <div
@@ -85,112 +87,225 @@ export default function PaymentProcessingView({ c }) {
           PROCESSING PAYMENT
         </div>
 
-        {/* QR code */}
-        <div
-          className="rounded-xl flex flex-col items-center justify-center mb-6"
-          style={{
-            background: COLORS.card,
-            border: `1px solid ${COLORS.border}`,
-            aspectRatio: "1 / 1",
-          }}
-        >
-          <img
-            src={qrCode}
-            alt="InstaPay QR code"
-            style={{ width: 360, height: 360, objectFit: "contain" }}
-          />
-          <div
+        {/* Payment Method Selector Dropdown */}
+        <div className="mb-6">
+          <label
             style={{
               fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-              fontSize: 13,
+              fontSize: 11.5,
               color: COLORS.inkMuted,
-              marginTop: 10,
-              letterSpacing: "0.05em",
+              fontWeight: 600,
+              display: "block",
+              marginBottom: 6,
             }}
           >
-            Scan with InstaPay
-          </div>
+            Select Payment Method
+          </label>
+          <select
+            value={c.paymentMethod}
+            onChange={(e) => c.setPaymentMethod(e.target.value)}
+            style={{ ...inputStyle, cursor: "pointer" }}
+          >
+            <option value="Cash On Hand">Cash On Hand</option>
+            <option value="Digital Payment">Digital Payment (InstaPay)</option>
+          </select>
         </div>
 
-        {/* reference number */}
-        <label
-          style={{
-            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-            fontSize: 11.5,
-            color: COLORS.inkMuted,
-            fontWeight: 600,
-            display: "block",
-            marginBottom: 6,
-          }}
-        >
-          Reference No.
-        </label>
-        <input
-          value={c.referenceNo}
-          onChange={(e) => c.setReferenceNo(e.target.value)}
-          placeholder="Enter the reference number from your digital payment."
-          style={{ ...inputStyle, marginBottom: 18 }}
-        />
-
-        {/* upload photo */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={(e) => c.handlePhotoUpload(e.target.files?.[0])}
-          style={{ display: "none" }}
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center justify-center gap-2"
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: `1px solid ${COLORS.border}`,
-            background: COLORS.borderSoft,
-            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-            fontSize: 14,
-            color: COLORS.ink,
-            cursor: "pointer",
-            marginBottom: 18,
-          }}
-        >
-          <ImageUp size={15} />
-          {c.uploadedPhotoName ? "Change photo" : "Upload payment screenshot"}
-        </button>
-
-        {/* uploaded preview */}
-        <div
-          className="rounded-xl flex flex-col items-center justify-center mb-6 overflow-hidden"
-          style={{
-            background: COLORS.card,
-            border: `1px solid ${COLORS.border}`,
-            minHeight: 240,
-          }}
-        >
-          {c.uploadedPhotoUrl ? (
-            <img
-              src={c.uploadedPhotoUrl}
-              alt="Uploaded proof of payment"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
+        {/* Cash On Hand Summary */}
+        {c.paymentMethod === "Cash On Hand" && (
+          <div
+            style={{
+              background: COLORS.card,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 12,
+              padding: 20,
+              marginBottom: 20,
+            }}
+          >
             <div
               style={{
-                fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-                fontSize: 13,
-                color: COLORS.inkMuted,
-                padding: 24,
                 textAlign: "center",
+                marginBottom: 20,
+                color: COLORS.oliveDark,
+                fontWeight: 700,
+                fontSize: 20,
               }}
             >
-              Uploaded photo will appear here
+              Booking Summary
             </div>
-          )}
-        </div>
 
-        {/* errors */}
+            <div style={{ marginBottom: 15 }}>
+              <strong>📷 Camera</strong>
+              <div>{c.camera || "-"}</div>
+            </div>
+
+            <div style={{ marginBottom: 15 }}>
+              <strong>📅 Rental Date</strong>
+              <div>
+                {formatDisplayDate(c.rangeStart)} - {formatDisplayDate(c.rangeEnd)}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 15 }}>
+              <strong>🗓 Rental Duration</strong>
+              <div>
+                {c.days} {c.days === 1 ? "Day" : "Days"}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 15 }}>
+              <strong>💵 Payment Method</strong>
+              <div>Cash On Hand</div>
+            </div>
+
+            <hr
+              style={{
+                margin: "20px 0",
+                borderColor: COLORS.border,
+              }}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 22,
+                fontWeight: "bold",
+                color: COLORS.oliveDark,
+              }}
+            >
+              <span>Total Payment</span>
+
+              <span>
+                ₱{Number(totalPrice || 0).toLocaleString()}
+              </span>
+            </div>
+
+            <div
+              style={{
+                marginTop: 20,
+                padding: 12,
+                borderRadius: 8,
+                background: COLORS.borderSoft,
+                color: COLORS.inkMuted,
+                fontSize: 13,
+              }}
+            >
+              Payment will be collected upon camera pick-up or meet-up.
+            </div>
+          </div>
+        )}
+
+        {/* Digital Payment Details */}
+        {c.paymentMethod === "Digital Payment" && (
+          <>
+            <div
+              className="rounded-xl flex flex-col items-center justify-center mb-6"
+              style={{
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                padding: 20,
+              }}
+            >
+              <img
+                src={qrCode}
+                alt="InstaPay QR code"
+                style={{ width: "100%", maxHeight: 320, objectFit: "contain" }}
+              />
+              <div
+                style={{
+                  fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                  fontSize: 13,
+                  color: COLORS.inkMuted,
+                  marginTop: 10,
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Scan with InstaPay
+              </div>
+            </div>
+
+            {/* Reference Number Input */}
+            <label
+              style={{
+                fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                fontSize: 11.5,
+                color: COLORS.inkMuted,
+                fontWeight: 600,
+                display: "block",
+                marginBottom: 6,
+              }}
+            >
+              Reference No.
+            </label>
+            <input
+              value={c.referenceNo}
+              onChange={(e) => c.setReferenceNo(e.target.value)}
+              placeholder="Enter the reference number from your digital payment."
+              style={{ ...inputStyle, marginBottom: 18 }}
+            />
+
+            {/* Upload File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => c.handlePhotoUpload(e.target.files?.[0])}
+              style={{ display: "none" }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center justify-center gap-2"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: `1px solid ${COLORS.border}`,
+                background: COLORS.borderSoft,
+                fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                fontSize: 14,
+                color: COLORS.ink,
+                cursor: "pointer",
+                marginBottom: 18,
+              }}
+            >
+              <ImageUp size={15} />
+              {c.uploadedPhotoName ? "Change photo" : "Upload payment screenshot"}
+            </button>
+
+            {/* Uploaded Preview */}
+            <div
+              className="rounded-xl flex flex-col items-center justify-center mb-6 overflow-hidden"
+              style={{
+                background: COLORS.card,
+                border: `1px solid ${COLORS.border}`,
+                minHeight: 200,
+              }}
+            >
+              {c.uploadedPhotoUrl ? (
+                <img
+                  src={c.uploadedPhotoUrl}
+                  alt="Uploaded proof of payment"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                    fontSize: 13,
+                    color: COLORS.inkMuted,
+                    padding: 24,
+                    textAlign: "center",
+                  }}
+                >
+                  Uploaded photo will appear here
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Errors Display */}
         {c.errors.length > 0 && (
           <div
             className="rounded-lg px-4 py-3 mb-4 flex items-start gap-2"
@@ -206,9 +321,6 @@ export default function PaymentProcessingView({ c }) {
             <span>Please complete: {c.errors.join(", ")}.</span>
           </div>
         )}
-
-        {/* Note: the "reserved" confirmation now lives in ReceiptModal,
-            shown over the booking screen once the reservation is saved. */}
 
         <button
           onClick={c.handleReserve}
@@ -237,4 +349,3 @@ export default function PaymentProcessingView({ c }) {
     </div>
   );
 }
-

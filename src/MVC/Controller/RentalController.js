@@ -24,7 +24,7 @@ import { ref, push } from "firebase/database";
 import { subscribeBookings } from "../../FirebaseService";
 
 export function useRentalController() {
-  const initial = new Date(2024, 7, 1);
+  const initial = new Date();
 
   // =========================
   // FIREBASE BOOKINGS
@@ -37,6 +37,8 @@ export function useRentalController() {
 
     return unsubscribe;
   }, []);
+
+  const [paymentMethod, setPaymentMethod] = useState("Cash On Hand");
 
   // =========================
   // CALENDAR STATE
@@ -150,6 +152,23 @@ export function useRentalController() {
     });
 
     return match ? match.status : undefined;
+  }
+
+  // =========================
+  // LIVE AVAILABLE STOCK FOR A CAMERA
+  // total quantity owned, minus however many units currently have an
+  // active (Pending or Approved) booking against them — used for the
+  // "(N available)" text in the camera dropdown
+  // =========================
+
+  function getCameraAvailableCount(cameraName) {
+    const reserved = bookings.filter(
+      (booking) =>
+        booking.camera === cameraName &&
+        BLOCKING_STATUSES.includes(booking.status)
+    ).length;
+
+    return Math.max(getCameraQuantity(cameraName) - reserved, 0);
   }
 
   // =========================
@@ -394,13 +413,20 @@ export function useRentalController() {
 
   // =========================
   // RESERVE CAMERA
+  // (was missing its own function wrapper — that's why the file wouldn't
+  // build at all: `await` outside an async function, and the stray closing
+  // brace was ending useRentalController() early)
   // =========================
 
   async function handleReserve() {
-    const missing = validatePaymentProof({
-      referenceNo,
-      uploadedPhotoUrl,
-    });
+    let missing = [];
+
+    if (paymentMethod === "Digital Payment") {
+      missing = validatePaymentProof({
+        referenceNo,
+        uploadedPhotoUrl,
+      });
+    }
 
     if (missing.length) {
       setErrors(missing);
@@ -416,6 +442,7 @@ export function useRentalController() {
       days,
       deliveryChoice,
       deliveryAddress,
+      paymentMethod,
       referenceNo,
       proofImage: uploadedPhotoUrl,
       status: "Pending",
@@ -483,6 +510,7 @@ export function useRentalController() {
     isDateBooked,
     getBookingLabel,
     getBookingStatus,
+    getCameraAvailableCount,
 
     // Form
     fullName,
@@ -504,6 +532,10 @@ export function useRentalController() {
     setCustomLocation,
 
     deliveryAddress,
+
+    // Payment
+    paymentMethod,
+    setPaymentMethod,
 
     // Submission
     confirmed,
