@@ -5,23 +5,23 @@ import SamplePhoto1 from "../../Images/Devfest2022.jpg";
 export const CAMERAS = [
   {
     name: "Sony A7IV w/ 24-70 GM",
+    shortName: "Sony A7IV",
     price: 550,
-    quantity: 7, // total units you own of this camera
   },
   {
     name: "Canon R5 w/ 50mm f/1.2",
+    shortName: "Canon R5",
     price: 650,
-    quantity: 3,
   },
   {
     name: "Canon R6 w/ 24-105mm",
+    shortName: "Canon R6",
     price: 500,
-    quantity: 3, 
   },
   {
     name: "Sony A7IV kit",
+    shortName: "Sony A7IV Kit",
     price: 450,
-    quantity: 3, 
   },
 ];
 
@@ -35,7 +35,7 @@ export const CAPTURED_PHOTOS = [
     settings: "f/2.8 • 1/500s • ISO 100",
     photographer: "@ Minervs",
     imageUrl: SamplePhoto1,
-    tag: "Captured with Canon R5"
+    tag: "Captured with Canon R5",
   },
   {
     id: 2,
@@ -44,8 +44,9 @@ export const CAPTURED_PHOTOS = [
     lens: "RF 50mm f/1.2 L USM",
     settings: "f/1.2 • 1/1250s • ISO 200",
     photographer: "@lens_and_light",
-    imageUrl: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=80",
-    tag: "Captured with Canon R5"
+    imageUrl:
+      "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=80",
+    tag: "Captured with Canon R5",
   },
   {
     id: 3,
@@ -54,8 +55,9 @@ export const CAPTURED_PHOTOS = [
     lens: "35mm f/1.4 GM",
     settings: "f/1.4 • 1/160s • ISO 1600",
     photographer: "@night_frames",
-    imageUrl: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80",
-    tag: "Low Light Highlight"
+    imageUrl:
+      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80",
+    tag: "Low Light Highlight",
   },
   {
     id: 4,
@@ -64,14 +66,15 @@ export const CAPTURED_PHOTOS = [
     lens: "XF 16-55mm f/2.8",
     settings: "f/4.0 • 1/800s • ISO 400",
     photographer: "@fuji_vibes",
-    imageUrl: "https://images.unsplash.com/photo-1502982720700-bfff97f2ecac?auto=format&fit=crop&w=800&q=80",
-    tag: "Fujifilm Color Test"
-  }
+    imageUrl:
+      "https://images.unsplash.com/photo-1502982720700-bfff97f2ecac?auto=format&fit=crop&w=800&q=80",
+    tag: "Fujifilm Color Test",
+  },
 ];
 
 export const DELIVERY_CHOICES = ["Pick-Up", "Meet-Up", "Maxim"];
 
-// fixed address used to fill the field when "Pick-Up" is chosen
+// Fixed address used to fill the field when "Pick-Up" is chosen
 export const STORE_LOCATION =
   "Lens & Shutter Rentals Studio, Cebu IT Park, Cebu City, 6000 Cebu";
 
@@ -88,6 +91,11 @@ export const MEETUPS = [
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Maximum number of active (Pending/Approved) reservations allowed per
+// camera per day — a flat daily cap, independent of how many physical
+// units of that camera you actually own.
+export const MAX_BOOKINGS_PER_DAY = 15;
+
 export const COLORS = {
   bg: "#F6EEDA",
   card: "#FDFBF3",
@@ -103,11 +111,18 @@ export const COLORS = {
   mustardText: "#4A3B10",
   lavender: "#E5E2ED",
   lavenderText: "#4F4B63",
+  orange: "#F2B15C",
+  orangeDark: "#D98A2B",
+  orangeText: "#5B3A12",
   olive: "#3D4A2A",
   oliveDark: "#2E3620",
 };
 
-/** Format y/m/d (m is 0-indexed) into "YYYY-MM-DD" */
+/**
+ * Format a y/m/d triple (month is 0-indexed, JS Date style) into the
+ * canonical "YYYY-MM-DD" key used to identify calendar days everywhere
+ * in this app (bookings, selection state, lookups).
+ */
 export function toKey(year, month, day) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
     2,
@@ -115,13 +130,19 @@ export function toKey(year, month, day) {
   )}`;
 }
 
-/** Parse "YYYY-MM-DD" into a local Date */
+/**
+ * Parse a "YYYY-MM-DD" key back into a local Date object.
+ * Inverse of `toKey`.
+ */
 export function fromKey(key) {
   const [y, m, d] = key.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 
-/** Human readable date, e.g. "15 Aug 2024" */
+/**
+ * Turn a "YYYY-MM-DD" key into a human-readable date, e.g. "15 Aug 2024".
+ * Returns an em dash placeholder when no key is provided.
+ */
 export function formatDisplayDate(key) {
   if (!key) return "—";
   return fromKey(key).toLocaleDateString("en-US", {
@@ -131,8 +152,12 @@ export function formatDisplayDate(key) {
   });
 }
 
-/** Build the 6x7 (or fewer trailing rows) calendar grid for a given month.
- *  Returns an array of day numbers or null for empty leading/trailing cells. */
+/**
+ * Build the calendar grid cells for a given month/year.
+ * Returns an array of day numbers (1..daysInMonth), padded with `null`
+ * for the leading/trailing empty cells so the grid always divides evenly
+ * into rows of 7 (one per weekday).
+ */
 export function buildMonthGrid(year, month) {
   const firstDayOfWeek = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -144,24 +169,34 @@ export function buildMonthGrid(year, month) {
   return cells;
 }
 
-/** Inclusive day count between two "YYYY-MM-DD" keys */
+/**
+ * Count the inclusive number of days between two "YYYY-MM-DD" keys.
+ * Returns 0 if either key is missing or the range is invalid (end before start).
+ */
 export function countDays(startKey, endKey) {
   if (!startKey || !endKey) return 0;
   const diff = (fromKey(endKey) - fromKey(startKey)) / (1000 * 60 * 60 * 24);
   return diff >= 0 ? diff + 1 : 0;
 }
 
+/** Look up the first-day rental price for a camera by name. Defaults to 0 if not found. */
 export function getCameraPrice(cameraName) {
   const camera = CAMERAS.find((c) => c.name === cameraName);
   return camera ? camera.price : 0;
 }
 
-/** Total units owned of a given camera model */
-export function getCameraQuantity(cameraName) {
+
+/** Look up the short display name for a camera (e.g. "Sony A7IV" instead of "Sony A7IV w/ 24-70 GM"), for compact UI spots like calendar chips. Falls back to the full name if no shortName is set. */
+export function getCameraShortName(cameraName) {
   const camera = CAMERAS.find((c) => c.name === cameraName);
-  return camera ? camera.quantity : 1;
+  return camera?.shortName || cameraName;
 }
 
+/**
+ * Calculate the total rental cost for a camera over a number of days.
+ * The first day is billed at the full base price; every additional day
+ * is billed at a discounted rate (base price - 100).
+ */
 export function calculateRentalPrice(cameraName, days) {
   const basePrice = getCameraPrice(cameraName);
 
@@ -172,12 +207,17 @@ export function calculateRentalPrice(cameraName, days) {
   return basePrice + (days - 1) * additionalDayPrice;
 }
 
+/** Get the discounted per-day rate (base price - 100, floored at 0) used for days after the first. */
 export function getAdditionalDayPrice(cameraName) {
   const basePrice = getCameraPrice(cameraName);
   return Math.max(basePrice - 100, 0);
 }
 
-/** Validate a booking form. Returns an array of missing-field labels. */
+/**
+ * Validate the main booking form.
+ * Returns an array of human-readable labels for any required field that
+ * is missing/empty; an empty array means the form is valid.
+ */
 export function validateBooking({
   fullName,
   contact,
@@ -196,7 +236,11 @@ export function validateBooking({
   return missing;
 }
 
-/** Validate the InstaPay proof-of-payment step. */
+/**
+ * Validate the InstaPay proof-of-payment step (only required when the
+ * customer chooses "Digital Payment").
+ * Returns an array of missing-field labels, empty when valid.
+ */
 export function validatePaymentProof({ referenceNo, uploadedPhotoUrl }) {
   const missing = [];
   if (!referenceNo || !referenceNo.trim()) missing.push("Reference No.");

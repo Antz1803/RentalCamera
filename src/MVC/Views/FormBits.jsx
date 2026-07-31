@@ -16,7 +16,8 @@ export const inputStyle = {
   boxSizing: "border-box",
 };
 
-export function LegendDot({ color, label }) {
+/** A colored swatch + label used in the calendar legend. Pass `dashed` for a dashed-border swatch (e.g. "waiting for confirmation"). */
+export function LegendDot({ color, label, dashed }) {
   return (
     <div className="flex items-center gap-2">
       <span
@@ -24,7 +25,8 @@ export function LegendDot({ color, label }) {
           width: 12,
           height: 12,
           borderRadius: 4,
-          background: color,
+          background: dashed ? "transparent" : color,
+          border: dashed ? `2px dashed ${color}` : "none",
           display: "inline-block",
         }}
       />
@@ -33,6 +35,7 @@ export function LegendDot({ color, label }) {
   );
 }
 
+/** Small uppercase heading with an icon, used to label each form card ("RENTER", "GEAR & DATES"). */
 export function SectionLabel({ icon, text }) {
   return (
     <div
@@ -50,6 +53,7 @@ export function SectionLabel({ icon, text }) {
   );
 }
 
+/** Wraps a form control with a labeled/iconed header. */
 export function Field({ label, icon, children }) {
   return (
     <div className="mb-3.5">

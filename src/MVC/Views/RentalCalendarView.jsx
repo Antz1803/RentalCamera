@@ -12,6 +12,11 @@ import PaymentPanel from "./PaymentPanel";
 import PaymentProcessingView from "./PaymentProcessingView";
 import ReceiptModal from "./ReceiptModal";
 
+/**
+ * Root view for the rental flow. Switches between the payment screen and
+ * the booking screen based on `c.step`, and overlays the receipt modal
+ * once a reservation has been submitted.
+ */
 export default function RentalCalendarView() {
   const c = useRentalController();
 
@@ -29,6 +34,7 @@ export default function RentalCalendarView() {
         background: COLORS.bg,
         color: COLORS.ink,
         minHeight: "100%",
+        overflowX: "hidden",
         fontFamily:
           "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif",
       }}
@@ -36,7 +42,18 @@ export default function RentalCalendarView() {
     >
       <div className="w-full max-w-4xl">
         <Header />
-        <CalendarPanel c={c} />
+
+        {/* Breakout wrapper: lets just the calendar be wider than the rest
+            of the form below it, regardless of the max-w-4xl container. */}
+        <div
+          className="flex justify-center"
+          style={{ width: "100vw", marginLeft: "50%", transform: "translateX(-50%)" }}
+        >
+          <div className="w-full max-w-8xl px-25">
+            <CalendarPanel c={c} />
+          </div>
+        </div>
+
         <BookingFormPanel c={c} />
         <PaymentPanel c={c} />
       </div>
@@ -46,9 +63,10 @@ export default function RentalCalendarView() {
   );
 }
 
+/** Brand header (logo + shop name) shown at the top of the booking screen. */
 function Header() {
   return (
-    <div className="flex items-center gap-4 mb-8">
+    <div className="flex items-center gap-4 mb-8 -ml-50">
       <div
         className="flex items-center justify-center rounded-full"
         style={{ width: 56, height: 56, background: COLORS.oliveDark, flexShrink: 0 }}

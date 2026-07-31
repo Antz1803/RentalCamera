@@ -1,4 +1,8 @@
 // Views/PaymentProcessingView.jsx
+// Full-screen step shown after "Proceed to Payment": lets the customer
+// pick Cash-on-Hand or Digital Payment, review the booking summary, and
+// (for digital payments) submit a reference number + screenshot.
+
 import React, { useRef } from "react";
 import { ArrowLeft, ImageUp, X } from "lucide-react";
 import {
@@ -8,9 +12,10 @@ import {
 } from "../Models/RentalModel";
 import { inputStyle } from "./FormBits";
 
-import logo from "../../Images/timer.png";
-import qrCode from "../../Images/My-Qr-Code.jpg";
+import logo from "/src/Images/timer.png";
+import qrCode from "/src/Images/My-Qr-Code.jpg";
 
+/** Brand header (logo + shop name) shown at the top of this view. */
 function Header() {
   return (
     <div className="flex items-center gap-4 mb-8">
@@ -158,12 +163,7 @@ export default function PaymentProcessingView({ c }) {
               <div>Cash On Hand</div>
             </div>
 
-            <hr
-              style={{
-                margin: "20px 0",
-                borderColor: COLORS.border,
-              }}
-            />
+            <hr style={{ margin: "20px 0", borderColor: COLORS.border }} />
 
             <div
               style={{
@@ -175,10 +175,7 @@ export default function PaymentProcessingView({ c }) {
               }}
             >
               <span>Total Payment</span>
-
-              <span>
-                ₱{Number(totalPrice || 0).toLocaleString()}
-              </span>
+              <span>₱{Number(totalPrice || 0).toLocaleString()}</span>
             </div>
 
             <div
@@ -225,7 +222,7 @@ export default function PaymentProcessingView({ c }) {
               </div>
             </div>
 
-            {/* Reference Number Input */}
+            {/* Customer Input for Digital Payment Reference Number */}
             <label
               style={{
                 fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
@@ -241,7 +238,7 @@ export default function PaymentProcessingView({ c }) {
             <input
               value={c.referenceNo}
               onChange={(e) => c.setReferenceNo(e.target.value)}
-              placeholder="Enter the reference number from your digital payment."
+              placeholder="Enter your reference number from your digital payment"
               style={{ ...inputStyle, marginBottom: 18 }}
             />
 
@@ -343,7 +340,8 @@ export default function PaymentProcessingView({ c }) {
           onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.99)")}
           onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
         >
-          RESERVE
+          {c.step === "reserved" && <ReceiptModal c={c} />}
+          Reserve
         </button>
       </div>
     </div>

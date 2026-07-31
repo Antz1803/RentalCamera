@@ -1,8 +1,9 @@
 // Views/components/PaymentPanel.jsx
-// Renders validation errors, a success confirmation, and the submit button.
+// Renders validation errors, the sample-photo highlight card, and the
+// "proceed to payment" submit button.
 
 import React from "react";
-import { X } from "lucide-react";
+import { AlignCenter, X } from "lucide-react";
 import { COLORS } from "../Models/RentalModel";
 import CameraHighlightCard from "./CameraHighlightCard";
 
@@ -28,7 +29,9 @@ export default function PaymentPanel({ c }) {
       <button
         onClick={c.handleProceedToPayment}
         style={{
-          width: "100%",
+          width: "40%",
+          margin: "0 auto", 
+          display: "block",  
           padding: "16px",
           borderRadius: 10,
           background: COLORS.olive,
@@ -48,10 +51,11 @@ export default function PaymentPanel({ c }) {
       >
         PROCEED TO SECURE PAYMENT
       </button>
+
       {/* Feature Highlight Card */}
-        <div className="mt-3">
-          <CameraHighlightCard />
-        </div>
+      <div className="mt-3">
+        <CameraHighlightCard />
+      </div>
     </>
   );
 }

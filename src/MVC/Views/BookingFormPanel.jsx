@@ -13,6 +13,7 @@ import {
 } from "../Models/RentalModel";
 import { Field, SectionLabel, inputStyle } from "./FormBits";
 
+/** Renter details + delivery choice on the left, camera/date selection + live price breakdown on the right. */
 export default function BookingFormPanel({ c }) {
   return (
     <div className="grid md:grid-cols-2 gap-5 mb-6">
@@ -33,12 +34,15 @@ export default function BookingFormPanel({ c }) {
 
         <Field label="Contact no." icon={<Phone size={13} />}>
           <input
-            value={c.contact}
-            onChange={(e) => c.setContact(e.target.value)}
-            style={inputStyle}
-            placeholder="e.g., 09011239978"
-            maxLength={11}
-          />
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={c.contact}
+              onChange={(e) => c.setContact(e.target.value.replace(/\D/g, ''))}
+              style={inputStyle}
+              placeholder="e.g., 09011239978"
+              maxLength={11}
+            />
         </Field>
 
         <Field label="Rental length (auto)">
@@ -100,130 +104,101 @@ export default function BookingFormPanel({ c }) {
         <SectionLabel icon={<Camera size={15} />} text="Gear & Dates" />
 
         <Field label="Camera available">
-            <select
-              value={c.camera}
-              onChange={(e) => c.setCamera(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}
-            >
-              {c.cameras.map((cam) => (
-                <option key={cam.name} value={cam.name}>
-                  {cam.name} ({c.getCameraAvailableCount(cam.name)} available)
-                </option>
-              ))}
-            </select>
+          <select
+            value={c.camera}
+            onChange={(e) => c.setCamera(e.target.value)}
+            style={{ ...inputStyle, cursor: "pointer" }}
+          >
+            {c.cameras.map((cam) => (
+              <option key={cam.name} value={cam.name}>
+                {cam.name}
+              </option>
+            ))}
+          </select>
+
+          <div
+            style={{
+              marginTop: 12,
+              padding: 12,
+              borderRadius: 8,
+              background: "#F8F6ED",
+              border: `1px solid ${COLORS.border}`,
+            }}
+          >
+            <div style={{ fontWeight: 600, color: COLORS.oliveDark }}>Base Price</div>
 
             <div
               style={{
-                marginTop: 12,
-                padding: 12,
-                borderRadius: 8,
-                background: "#F8F6ED",
-                border: `1px solid ${COLORS.border}`,
+                fontSize: 24,
+                fontWeight: "bold",
+                color: COLORS.sageDark,
+                marginTop: 5,
               }}
             >
-              <div
-                style={{
-                  fontWeight: 600,
-                  color: COLORS.oliveDark,
-                }}
-              >
-                Base Price
-              </div>
-
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: "bold",
-                  color: COLORS.sageDark,
-                  marginTop: 5,
-                }}
-              >
-                ₱{getCameraPrice(c.camera).toLocaleString()}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 6,
-                  color: COLORS.inkMuted,
-                  fontSize: 13,
-                }}
-              >
-                First day rental
-              </div>
+              ₱{getCameraPrice(c.camera).toLocaleString()}
             </div>
+
+            <div style={{ marginTop: 6, color: COLORS.inkMuted, fontSize: 13 }}>
+              First day rental
+            </div>
+          </div>
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Start date">
+            <div style={inputStyle}>{formatDisplayDate(c.rangeStart)}</div>
           </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-            <Field label="Start date">
-              <div style={inputStyle}>{formatDisplayDate(c.rangeStart)}</div>
-            </Field>
+          <Field label="End date">
+            <div style={inputStyle}>{formatDisplayDate(c.rangeEnd)}</div>
+          </Field>
+        </div>
 
-            <Field label="End date">
-              <div style={inputStyle}>{formatDisplayDate(c.rangeEnd)}</div>
-            </Field>
+        <div
+          style={{
+            marginTop: 18,
+            padding: 18,
+            borderRadius: 12,
+            background: "#EEF7EC",
+            border: "2px solid #8DBA8A",
+          }}
+        >
+          <div style={{ fontSize: 14, color: COLORS.inkMuted }}>Rental Cost</div>
+
+          <div
+            style={{
+              fontSize: 30,
+              fontWeight: 700,
+              color: "#2F6A36",
+              marginTop: 5,
+            }}
+          >
+            ₱{calculateRentalPrice(c.camera, c.days).toLocaleString()}
           </div>
 
           <div
             style={{
-              marginTop: 18,
-              padding: 18,
-              borderRadius: 12,
-              background: "#EEF7EC",
-              border: "2px solid #8DBA8A",
+              marginTop: 8,
+              fontSize: 13,
+              color: COLORS.inkMuted,
+              lineHeight: 1.6,
             }}
           >
-            <div
-              style={{
-                fontSize: 14,
-                color: COLORS.inkMuted,
-              }}
-            >
-              Rental Cost
-            </div>
-
-            <div
-              style={{
-                fontSize: 30,
-                fontWeight: 700,
-                color: "#2F6A36",
-                marginTop: 5,
-              }}
-            >
-              ₱{calculateRentalPrice(c.camera, c.days).toLocaleString()}
-            </div>
-
-         <div
-              style={{
-                marginTop: 8,
-                fontSize: 13,
-                color: COLORS.inkMuted,
-                lineHeight: 1.6,
-              }}
-            >
-              {c.days > 0 ? (
-                <>
-                  First day: <strong>₱{getCameraPrice(c.camera)}</strong>
-                  <br />
-                  Additional day(s):{" "}
-                  <strong>₱{getAdditionalDayPrice(c.camera)}</strong> / day
-                  <br />
-                    <hr
-                        style={{
-                          margin: "10px 0",
-                          borderColor: COLORS.border,
-                        }}
-                      />
-                  Total:{" "}
-                  <strong>
-                    ₱{calculateRentalPrice(c.camera, c.days).toLocaleString()}
-                  </strong>
-                </>
-              ) : (
-                "Select your rental dates."
-              )}
-            </div>
+            {c.days > 0 ? (
+              <>
+                First day: <strong>₱{getCameraPrice(c.camera)}</strong>
+                <br />
+                Additional day(s): <strong>₱{getAdditionalDayPrice(c.camera)}</strong> / day
+                <br />
+                <hr style={{ margin: "10px 0", borderColor: COLORS.border }} />
+                Total:{" "}
+                <strong>₱{calculateRentalPrice(c.camera, c.days).toLocaleString()}</strong>
+              </>
+            ) : (
+              "Select your rental dates."
+            )}
           </div>
-
+        </div>
 
         <p
           style={{

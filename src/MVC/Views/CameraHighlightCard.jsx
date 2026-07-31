@@ -1,27 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { RefreshCw, Camera, Maximize2, X, Aperture } from 'lucide-react';
 import { CAPTURED_PHOTOS } from "../Models/RentalModel";
 
-
+const AUTO_SHUFFLE_INTERVAL_MS = 6000;
 
 export default function CameraHighlightCard() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // Shuffle to another sample photo
+  // Shuffle to another sample photo (used by both the button and the
+  // automatic timer below, so they behave identically)
   const handleNextPhoto = () => {
+    if (CAPTURED_PHOTOS.length <= 1) return;
+
     setIsRefreshing(true);
     setTimeout(() => {
-      let nextIndex;
-      do {
-        nextIndex = Math.floor(Math.random() * CAPTURED_PHOTOS.length);
-      } while (nextIndex === currentIndex);
-
-      setCurrentIndex(nextIndex);
+      setCurrentIndex((prevIndex) => {
+        let nextIndex;
+        do {
+          nextIndex = Math.floor(Math.random() * CAPTURED_PHOTOS.length);
+        } while (nextIndex === prevIndex);
+        return nextIndex;
+      });
       setIsRefreshing(false);
     }, 180);
   };
+
+  // Auto-shuffle on a timer. Paused while the fullscreen preview is open
+  // so the photo doesn't change out from under someone looking at it.
+  useEffect(() => {
+    if (isPreviewOpen) return;
+
+    const interval = setInterval(() => {
+      handleNextPhoto();
+    }, AUTO_SHUFFLE_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPreviewOpen]);
 
   const currentPhoto = CAPTURED_PHOTOS[currentIndex];
 

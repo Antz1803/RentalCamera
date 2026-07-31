@@ -8,12 +8,12 @@ import { useMemo, useState, useEffect } from "react";
 import {
   CAMERAS,
   DELIVERY_CHOICES,
+  MAX_BOOKINGS_PER_DAY,
   MEETUPS,
   STORE_LOCATION,
   buildMonthGrid,
   countDays,
   fromKey,
-  getCameraQuantity,
   toKey,
   validateBooking,
   validatePaymentProof,
@@ -22,6 +22,12 @@ import {
 import { db } from "../../firebase";
 import { ref, push } from "firebase/database";
 import { subscribeBookings } from "../../FirebaseService";
+
+// Booking statuses that should count as "reserving" a date. Pending
+// bookings block the date too (not just Approved), otherwise two
+// customers could both reserve the same date while the first is still
+// awaiting manual verification.
+const BLOCKING_STATUSES = ["Pending", "Approved"];
 
 export function useRentalController() {
   const initial = new Date();
@@ -32,9 +38,9 @@ export function useRentalController() {
 
   const [bookings, setBookings] = useState([]);
 
+  // Subscribe to live booking data from Firebase for the lifetime of the component.
   useEffect(() => {
     const unsubscribe = subscribeBookings(setBookings);
-
     return unsubscribe;
   }, []);
 
@@ -63,12 +69,8 @@ export function useRentalController() {
   // DELIVERY STATE
   // =========================
 
-  const [deliveryChoice, setDeliveryChoiceRaw] = useState(
-    DELIVERY_CHOICES[0]
-  );
-
+  const [deliveryChoice, setDeliveryChoiceRaw] = useState(DELIVERY_CHOICES[0]);
   const [meetup, setMeetup] = useState(MEETUPS[0]);
-
   const [customLocation, setCustomLocation] = useState("");
 
   // =========================
@@ -77,104 +79,92 @@ export function useRentalController() {
 
   const [confirmed, setConfirmed] = useState(false);
   const [errors, setErrors] = useState([]);
-
   const [step, setStep] = useState("booking");
 
   const [referenceNo, setReferenceNo] = useState("");
+  const [systemRefNo, setSystemRefNo] = useState("");
 
   const [uploadedPhotoUrl, setUploadedPhotoUrl] = useState(null);
-
   const [uploadedPhotoName, setUploadedPhotoName] = useState(null);
 
-  // =========================
-  // CHECK IF DATE IS BOOKED
-  // (scoped to whichever camera is currently selected — a booking on
-  // Camera A doesn't block Camera B on the same day)
-  //
-  // Pending bookings count as reserved too, not just Approved ones —
-  // otherwise two customers could both "reserve" the same date while
-  // the first one is still awaiting manual verification.
-  // =========================
+  /**
+   * All active (Pending/Approved) bookings for the currently selected
+   * camera that cover the given date. A camera is owned in multiple
+   * units, so more than one customer can hold overlapping dates at once
+   * — this returns every one of them, not just the first match.
+   */
+  function getBookingsForDate(dateKey) {
+    return bookings.filter((booking) => {
+      if (!BLOCKING_STATUSES.includes(booking.status)) return false;
 
-  const BLOCKING_STATUSES = ["Pending", "Approved"];
+      return (
+        booking.camera === camera &&
+        dateKey >= booking.startDate &&
+        dateKey <= booking.endDate
+      );
+    });
+  }
 
+  /**
+   * Is the given date fully booked for the currently selected camera?
+   * A date becomes blocked once the number of active reservations
+   * covering it reaches the flat daily cap (MAX_BOOKINGS_PER_DAY) — this
+   * is independent of how many physical units of the camera exist.
+   */
   function isDateBooked(dateKey) {
-    return bookings.some((booking) => {
-      if (!BLOCKING_STATUSES.includes(booking.status)) {
-        return false;
-      }
-
-      return (
-        booking.camera === camera &&
-        dateKey >= booking.startDate &&
-        dateKey <= booking.endDate
-      );
-    });
+    const reservedCount = getBookingsForDate(dateKey).length;
+    return reservedCount >= MAX_BOOKINGS_PER_DAY;
   }
 
-  // =========================
-  // WHO BOOKED A GIVEN DATE
-  // (for the calendar's "Booked — Sarah P." style label)
-  // =========================
+  /**
+   * Every active booking covering the given date, for the currently
+   * selected camera, reduced to just what the calendar needs to render
+   * a per-renter name chip: their name and that specific booking's
+   * status (Pending vs Approved).
+   */
+  function getBookingEntries(dateKey) {
+    return getBookingsForDate(dateKey).map((booking) => ({
+      fullName: booking.fullName,
+      status: booking.status,
+    }));
+  }
 
+  /**
+   * Comma-separated renter names for the given date, for the currently
+   * selected camera. Used for the calendar day cell's tooltip text.
+   */
   function getBookingLabel(dateKey) {
-    const match = bookings.find((booking) => {
-      if (!BLOCKING_STATUSES.includes(booking.status)) {
-        return false;
-      }
-
-      return (
-        booking.camera === camera &&
-        dateKey >= booking.startDate &&
-        dateKey <= booking.endDate
-      );
-    });
-
-    return match ? match.fullName : undefined;
+    const names = getBookingEntries(dateKey).map((entry) => entry.fullName);
+    return names.length ? names.join(", ") : undefined;
   }
 
-  // =========================
-  // BOOKING STATUS FOR A GIVEN DATE
-  // lets the calendar visually distinguish "Pending" from "Approved"
-  // =========================
-
+  /**
+   * Status to display for the given date, for the currently selected
+   * camera. If any of the overlapping active bookings is still Pending,
+   * the date is shown as Pending (awaiting confirmation); otherwise it's
+   * shown as Approved.
+   */
   function getBookingStatus(dateKey) {
-    const match = bookings.find((booking) => {
-      if (!BLOCKING_STATUSES.includes(booking.status)) {
-        return false;
-      }
+    const matches = getBookingsForDate(dateKey);
 
-      return (
-        booking.camera === camera &&
-        dateKey >= booking.startDate &&
-        dateKey <= booking.endDate
-      );
-    });
-
-    return match ? match.status : undefined;
+    if (matches.length === 0) return undefined;
+    return matches.some((booking) => booking.status === "Pending")
+      ? "Pending"
+      : "Approved";
   }
 
-  // =========================
-  // LIVE AVAILABLE STOCK FOR A CAMERA
-  // total quantity owned, minus however many units currently have an
-  // active (Pending or Approved) booking against them — used for the
-  // "(N available)" text in the camera dropdown
-  // =========================
 
-  function getCameraAvailableCount(cameraName) {
-    const reserved = bookings.filter(
-      (booking) =>
-        booking.camera === cameraName &&
-        BLOCKING_STATUSES.includes(booking.status)
-    ).length;
-
-    return Math.max(getCameraQuantity(cameraName) - reserved, 0);
+  /** Generate a short, human-friendly system reference number for a new booking. */
+  function generateSystemRef(prefix = "LSR") {
+    const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+    return `${prefix}-${randomStr}`;
   }
 
-  // =========================
-  // CHECK DATE RANGE
-  // =========================
-
+  /**
+   * Check whether any date in the (inclusive, order-agnostic) range
+   * between startKey and endKey is already booked. Used to prevent a
+   * user from selecting a range that jumps over an unavailable date.
+   */
   function rangeCrossesBooked(startKey, endKey) {
     let startDate = fromKey(startKey);
     let endDate = fromKey(endKey);
@@ -192,9 +182,7 @@ export function useRentalController() {
         current.getDate()
       );
 
-      if (isDateBooked(key)) {
-        return true;
-      }
+      if (isDateBooked(key)) return true;
 
       current.setDate(current.getDate() + 1);
     }
@@ -206,14 +194,10 @@ export function useRentalController() {
   // MONTH LABEL
   // =========================
 
-  const monthLabel = new Date(
-    viewYear,
-    viewMonth,
-    1
-  ).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString(
+    "en-US",
+    { month: "long", year: "numeric" }
+  );
 
   // =========================
   // CALENDAR GRID
@@ -235,28 +219,20 @@ export function useRentalController() {
 
   // =========================
   // DELIVERY ADDRESS
+  // Resolves to the right address string based on the delivery choice.
   // =========================
 
   const deliveryAddress = useMemo(() => {
-    if (deliveryChoice === "Pick-Up") {
-      return STORE_LOCATION;
-    }
-
-    if (deliveryChoice === "Meet-Up") {
-      return meetup;
-    }
-
-    if (deliveryChoice === "Maxim") {
-      return customLocation;
-    }
-
+    if (deliveryChoice === "Pick-Up") return STORE_LOCATION;
+    if (deliveryChoice === "Meet-Up") return meetup;
+    if (deliveryChoice === "Maxim") return customLocation;
     return "";
   }, [deliveryChoice, meetup, customLocation]);
 
-  // =========================
-  // DELIVERY CHOICE
-  // =========================
-
+  /**
+   * Switch delivery method and reset any dependent state (default meetup
+   * spot, cleared custom address) plus any stale confirmation/errors.
+   */
   function setDeliveryChoice(choice) {
     setDeliveryChoiceRaw(choice);
 
@@ -272,37 +248,30 @@ export function useRentalController() {
     }
   }
 
-  // =========================
-  // CHECK SELECTED RANGE
-  // =========================
-
+  /**
+   * Is `key` part of the range currently being selected/hovered on the
+   * calendar? Used purely for calendar cell highlighting.
+   */
   function isInSelectedRange(key) {
-    if (!rangeStart) {
-      return false;
-    }
+    if (!rangeStart) return false;
 
     const end = rangeEnd || hoverKey;
-
-    if (!end) {
-      return key === rangeStart;
-    }
+    if (!end) return key === rangeStart;
 
     const [a, b] =
-      fromKey(rangeStart) <= fromKey(end)
-        ? [rangeStart, end]
-        : [end, rangeStart];
+      fromKey(rangeStart) <= fromKey(end) ? [rangeStart, end] : [end, rangeStart];
 
     return key >= a && key <= b;
   }
 
-  // =========================
-  // CLICK CALENDAR DATE
-  // =========================
-
+  /**
+   * Handle a click on a calendar day. Implements the two-click
+   * start/end range selection, blocks booked dates, allows clearing by
+   * re-clicking the start date, and restarts selection if the chosen
+   * range would cross an already-booked date.
+   */
   function handleDayClick(key) {
-    if (isDateBooked(key)) {
-      return;
-    }
+    if (isDateBooked(key)) return;
 
     setConfirmed(false);
     setErrors([]);
@@ -314,7 +283,7 @@ export function useRentalController() {
       return;
     }
 
-    // Click the same start date
+    // Click the same start date again to clear selection
     if (key === rangeStart) {
       setRangeStart(null);
       setRangeEnd(null);
@@ -328,7 +297,7 @@ export function useRentalController() {
       return;
     }
 
-    // Earlier date selected
+    // Earlier date selected than the current start — swap
     if (fromKey(key) < fromKey(rangeStart)) {
       setRangeEnd(rangeStart);
       setRangeStart(key);
@@ -337,10 +306,7 @@ export function useRentalController() {
     }
   }
 
-  // =========================
-  // CHANGE MONTH
-  // =========================
-
+  /** Move the visible calendar month forward/backward by `delta` months, rolling over the year as needed. */
   function handleMonthChange(delta) {
     let m = viewMonth + delta;
     let y = viewYear;
@@ -357,10 +323,7 @@ export function useRentalController() {
     setViewYear(y);
   }
 
-  // =========================
-  // CLEAR DATES
-  // =========================
-
+  /** Reset the selected date range and any related confirmation/errors. */
   function handleClearDates() {
     setRangeStart(null);
     setRangeEnd(null);
@@ -368,10 +331,7 @@ export function useRentalController() {
     setErrors([]);
   }
 
-  // =========================
-  // PROCEED TO PAYMENT
-  // =========================
-
+  /** Validate the booking form and, if valid, generate a reference number and move to the payment step. */
   function handleProceedToPayment() {
     const missing = validateBooking({
       fullName,
@@ -388,17 +348,13 @@ export function useRentalController() {
     }
 
     setErrors([]);
+    setSystemRefNo(generateSystemRef("LSR"));
     setStep("payment");
   }
 
-  // =========================
-  // PHOTO UPLOAD
-  // =========================
-
+  /** Read the selected proof-of-payment file and store it as a data URL for preview/submission. */
   function handlePhotoUpload(file) {
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
 
@@ -411,21 +367,16 @@ export function useRentalController() {
     reader.readAsDataURL(file);
   }
 
-  // =========================
-  // RESERVE CAMERA
-  // (was missing its own function wrapper — that's why the file wouldn't
-  // build at all: `await` outside an async function, and the stray closing
-  // brace was ending useRentalController() early)
-  // =========================
-
+  /**
+   * Validate payment proof (when paying digitally), then persist the
+   * booking to Firebase with status "Pending" and advance to the
+   * receipt/confirmation step.
+   */
   async function handleReserve() {
     let missing = [];
 
     if (paymentMethod === "Digital Payment") {
-      missing = validatePaymentProof({
-        referenceNo,
-        uploadedPhotoUrl,
-      });
+      missing = validatePaymentProof({ referenceNo, uploadedPhotoUrl });
     }
 
     if (missing.length) {
@@ -443,7 +394,8 @@ export function useRentalController() {
       deliveryChoice,
       deliveryAddress,
       paymentMethod,
-      referenceNo,
+      customerRefNo: paymentMethod === "Digital Payment" ? referenceNo : "N/A",
+      systemRefNo,
       proofImage: uploadedPhotoUrl,
       status: "Pending",
       createdAt: Date.now(),
@@ -463,21 +415,16 @@ export function useRentalController() {
     }
   }
 
-  // =========================
-  // BACK TO BOOKING
-  // =========================
-
+  /** Return from the payment step back to the booking form, clearing any errors. */
   function handleBackToBooking() {
     setErrors([]);
     setStep("booking");
   }
 
-  // =========================
-  // CLOSE RECEIPT MODAL
-  // resets the payment-proof fields and selected dates so the booking
-  // form is ready for a fresh reservation
-  // =========================
-
+  /**
+   * Close the receipt modal and reset payment-proof fields and selected
+   * dates so the booking form is ready for a fresh reservation.
+   */
   function handleCloseReceipt() {
     setStep("booking");
     setConfirmed(false);
@@ -509,8 +456,8 @@ export function useRentalController() {
     bookings,
     isDateBooked,
     getBookingLabel,
+    getBookingEntries,
     getBookingStatus,
-    getCameraAvailableCount,
 
     // Form
     fullName,
@@ -545,6 +492,7 @@ export function useRentalController() {
 
     referenceNo,
     setReferenceNo,
+    systemRefNo,
 
     uploadedPhotoUrl,
     uploadedPhotoName,
