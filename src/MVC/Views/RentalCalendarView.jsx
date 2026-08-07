@@ -70,10 +70,10 @@ function Header() {
     <img
            src={logo}
            alt="J & M Rentals Hub"
-           style={{ width: 56, height: 56, flexShrink: 0 }}
+           style={{ width: 95, height: 95, flexShrink: 0 }}
          />
       <div>
-        <div style={{ fontSize: 26, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>
+        <div style={{ fontSize: 46, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>
           J&M
         </div>
         <div
