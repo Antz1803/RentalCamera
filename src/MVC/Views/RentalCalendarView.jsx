@@ -11,7 +11,7 @@ import BookingFormPanel from "./BookingFormPanel";
 import PaymentPanel from "./PaymentPanel";
 import PaymentProcessingView from "./PaymentProcessingView";
 import ReceiptModal from "./ReceiptModal";
-
+import logo from "/src/Images/Logo.svg";
 /**
  * Root view for the rental flow. Switches between the payment screen and
  * the booking screen based on `c.step`, and overlays the receipt modal
@@ -67,15 +67,14 @@ export default function RentalCalendarView() {
 function Header() {
   return (
     <div className="flex items-center gap-4 mb-8 -ml-50">
-      <div
-        className="flex items-center justify-center rounded-full"
-        style={{ width: 56, height: 56, background: COLORS.oliveDark, flexShrink: 0 }}
-      >
-        <Aperture size={30} color={COLORS.sage} strokeWidth={1.6} />
-      </div>
+    <img
+           src={logo}
+           alt="J & M Rentals Hub"
+           style={{ width: 56, height: 56, flexShrink: 0 }}
+         />
       <div>
         <div style={{ fontSize: 26, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>
-          LENS &amp; SHUTTER
+          J&M
         </div>
         <div
           style={{
@@ -86,7 +85,7 @@ function Header() {
             marginTop: 2,
           }}
         >
-          RENTALS
+          RENTALS HUB
         </div>
       </div>
     </div>

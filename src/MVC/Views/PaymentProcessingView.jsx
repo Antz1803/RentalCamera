@@ -12,7 +12,7 @@ import {
 } from "../Models/RentalModel";
 import { inputStyle } from "./FormBits";
 
-import logo from "/src/Images/timer.png";
+import logo from "/src/Images/Logo.svg";
 import qrCode from "/src/Images/My-Qr-Code.jpg";
 
 /** Brand header (logo + shop name) shown at the top of this view. */
@@ -21,12 +21,12 @@ function Header() {
     <div className="flex items-center gap-4 mb-8">
       <img
         src={logo}
-        alt="Lens & Shutter Rentals"
+        alt="J & M Rentals Hub"
         style={{ width: 56, height: 56, flexShrink: 0 }}
       />
       <div>
         <div style={{ fontSize: 26, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>
-          LENS &amp; SHUTTER
+          J & M
         </div>
         <div
           style={{
@@ -37,7 +37,7 @@ function Header() {
             marginTop: 2,
           }}
         >
-          RENTALS
+          RENTALS Hub
         </div>
       </div>
     </div>
@@ -111,13 +111,13 @@ export default function PaymentProcessingView({ c }) {
             onChange={(e) => c.setPaymentMethod(e.target.value)}
             style={{ ...inputStyle, cursor: "pointer" }}
           >
-            <option value="Cash On Hand">Cash On Hand</option>
+            <option value="Cash On Delivery">Cash On Delivery</option>
             <option value="Digital Payment">Digital Payment (InstaPay)</option>
           </select>
         </div>
 
-        {/* Cash On Hand Summary */}
-        {c.paymentMethod === "Cash On Hand" && (
+        {/* Cash On Delivery Summary */}
+        {c.paymentMethod === "Cash On Delivery" && (
           <div
             style={{
               background: COLORS.card,
@@ -160,7 +160,7 @@ export default function PaymentProcessingView({ c }) {
 
             <div style={{ marginBottom: 15 }}>
               <strong>💵 Payment Method</strong>
-              <div>Cash On Hand</div>
+              <div>Cash On Delivery</div>
             </div>
 
             <hr style={{ margin: "20px 0", borderColor: COLORS.border }} />

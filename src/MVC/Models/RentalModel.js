@@ -25,6 +25,22 @@ export const CAMERAS = [
   },
 ];
 
+/**
+ * Returns true if the given YYYY-MM-DD date is before today.
+ */
+export function isPastDate(dateKey) {
+  const selectedDate = fromKey(dateKey);
+
+  // Reset selected date time
+  selectedDate.setHours(0, 0, 0, 0);
+
+  // Today's date
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return selectedDate < today;
+}
+
 // Gallery of sample photos captured using camera equipment
 export const CAPTURED_PHOTOS = [
   {
@@ -76,7 +92,7 @@ export const DELIVERY_CHOICES = ["Pick-Up", "Meet-Up", "Maxim"];
 
 // Fixed address used to fill the field when "Pick-Up" is chosen
 export const STORE_LOCATION =
-  "Lens & Shutter Rentals Studio, Cebu IT Park, Cebu City, 6000 Cebu";
+  "J & M Rentals Hub, Cebu IT Park, Cebu City, 6000 Cebu";
 
 export const MEETUPS = [
   "City Mall, 7VXV+7QR, Natalio B. Bacalso Ave, Cebu City, 6000 Cebu",

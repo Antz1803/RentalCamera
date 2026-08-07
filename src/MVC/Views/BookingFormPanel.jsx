@@ -93,6 +93,26 @@ export default function BookingFormPanel({ c }) {
               style={inputStyle}
               placeholder="Enter your full address"
             />
+           <p
+        style={{
+          marginTop: 10,
+          fontWeight: "600",
+          color: "#B45309",
+        }}
+      >
+        Note:
+      </p>
+
+      <p
+        style={{
+          fontSize: 13,
+          color: "#6B7280",
+          lineHeight: 1.5,
+        }}
+      >
+        The customer is responsible for paying the Maxim delivery fee upon
+        delivery.
+      </p>
           </Field>
         )}
       </div>

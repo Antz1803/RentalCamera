@@ -44,7 +44,7 @@ export function useRentalController() {
     return unsubscribe;
   }, []);
 
-  const [paymentMethod, setPaymentMethod] = useState("Cash On Hand");
+  const [paymentMethod, setPaymentMethod] = useState("Cash On Delivery");
 
   // =========================
   // CALENDAR STATE
@@ -88,10 +88,10 @@ export function useRentalController() {
   const [uploadedPhotoName, setUploadedPhotoName] = useState(null);
 
   /**
-   * All active (Pending/Approved) bookings for the currently selected
-   * camera that cover the given date. A camera is owned in multiple
-   * units, so more than one customer can hold overlapping dates at once
-   * — this returns every one of them, not just the first match.
+   * All active (Pending/Approved) bookings for the CURRENTLY SELECTED
+   * camera that cover the given date. Used only for the capacity check
+   * (isDateBooked) — whether the customer can actually reserve this date
+   * for the camera they're currently trying to book.
    */
   function getBookingsForDate(dateKey) {
     return bookings.filter((booking) => {
@@ -106,10 +106,24 @@ export function useRentalController() {
   }
 
   /**
-   * Is the given date fully booked for the currently selected camera?
-   * A date becomes blocked once the number of active reservations
-   * covering it reaches the flat daily cap (MAX_BOOKINGS_PER_DAY) — this
-   * is independent of how many physical units of the camera exist.
+   * All active (Pending/Approved) bookings for ANY camera that cover the
+   * given date. Used for display purposes — the calendar shows every
+   * reservation that day, regardless of which camera is currently
+   * selected in the form, so the customer can see the full picture.
+   */
+  function getAllBookingsForDate(dateKey) {
+    return bookings.filter((booking) => {
+      if (!BLOCKING_STATUSES.includes(booking.status)) return false;
+      return dateKey >= booking.startDate && dateKey <= booking.endDate;
+    });
+  }
+
+  /**
+   * Is the given date fully booked for the CURRENTLY SELECTED camera?
+   * A date becomes blocked once the number of active reservations for
+   * that specific camera covering it reaches the flat daily cap
+   * (MAX_BOOKINGS_PER_DAY) — this only ever looks at the selected
+   * camera, since booking out the Sony shouldn't block the Canon.
    */
   function isDateBooked(dateKey) {
     const reservedCount = getBookingsForDate(dateKey).length;
@@ -117,35 +131,35 @@ export function useRentalController() {
   }
 
   /**
-   * Every active booking covering the given date, for the currently
-   * selected camera, reduced to just what the calendar needs to render
-   * a per-renter name chip: their name and that specific booking's
-   * status (Pending vs Approved).
+   * Every active booking covering the given date, across ALL cameras,
+   * reduced to just what the calendar needs to render a per-renter name
+   * chip: their name, that booking's status (Pending vs Approved), and
+   * which camera it's for (so the chip can be labeled correctly).
    */
   function getBookingEntries(dateKey) {
-    return getBookingsForDate(dateKey).map((booking) => ({
+    return getAllBookingsForDate(dateKey).map((booking) => ({
       fullName: booking.fullName,
       status: booking.status,
+      camera: booking.camera,
     }));
   }
 
   /**
-   * Comma-separated renter names for the given date, for the currently
-   * selected camera. Used for the calendar day cell's tooltip text.
+   * Comma-separated renter names for the given date, across all cameras.
+   * Used for the calendar day cell's tooltip text.
    */
   function getBookingLabel(dateKey) {
-    const names = getBookingEntries(dateKey).map((entry) => entry.fullName);
+    const names = getAllBookingsForDate(dateKey).map((b) => b.fullName);
     return names.length ? names.join(", ") : undefined;
   }
 
   /**
-   * Status to display for the given date, for the currently selected
-   * camera. If any of the overlapping active bookings is still Pending,
-   * the date is shown as Pending (awaiting confirmation); otherwise it's
-   * shown as Approved.
+   * Status to display for the given date, across all cameras. If any of
+   * the overlapping active bookings is still Pending, the date is shown
+   * as Pending (awaiting confirmation); otherwise it's shown as Approved.
    */
   function getBookingStatus(dateKey) {
-    const matches = getBookingsForDate(dateKey);
+    const matches = getAllBookingsForDate(dateKey);
 
     if (matches.length === 0) return undefined;
     return matches.some((booking) => booking.status === "Pending")
@@ -153,17 +167,17 @@ export function useRentalController() {
       : "Approved";
   }
 
-
   /** Generate a short, human-friendly system reference number for a new booking. */
-  function generateSystemRef(prefix = "LSR") {
+  function generateSystemRef(prefix = "J&M") {
     const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
     return `${prefix}-${randomStr}`;
   }
 
   /**
    * Check whether any date in the (inclusive, order-agnostic) range
-   * between startKey and endKey is already booked. Used to prevent a
-   * user from selecting a range that jumps over an unavailable date.
+   * between startKey and endKey is already booked (for the currently
+   * selected camera). Used to prevent a user from selecting a range that
+   * jumps over an unavailable date.
    */
   function rangeCrossesBooked(startKey, endKey) {
     let startDate = fromKey(startKey);
@@ -348,7 +362,7 @@ export function useRentalController() {
     }
 
     setErrors([]);
-    setSystemRefNo(generateSystemRef("LSR"));
+    setSystemRefNo(generateSystemRef("J&M"));
     setStep("payment");
   }
 

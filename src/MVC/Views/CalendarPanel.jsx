@@ -4,7 +4,13 @@
 
 import React from "react";
 import { Aperture, ChevronLeft, ChevronRight } from "lucide-react";
-import { COLORS, WEEKDAYS, toKey, getCameraShortName } from "../Models/RentalModel";
+import {
+  COLORS,
+  WEEKDAYS,
+  toKey,
+  getCameraShortName,
+  isPastDate,
+} from "../Models/RentalModel";
 import { LegendDot } from "./FormBits";
 
 /** Month calendar grid: header/nav, day cells (colored by booking status/selection), and a legend. */
@@ -61,6 +67,7 @@ export default function CalendarPanel({ c }) {
           if (d === null) return <div key={i} />;
 
           const key = toKey(c.viewYear, c.viewMonth, d);
+          const past = isPastDate(key);
           const full = c.isDateBooked(key);
           const bookingEntries = c.getBookingEntries(key);
           const hasBookings = bookingEntries.length > 0;
@@ -86,8 +93,12 @@ export default function CalendarPanel({ c }) {
           return (
             <button
               key={i}
-              disabled={full}
-              onClick={() => c.handleDayClick(key)}
+              disabled={full || past}
+              onClick={() => {
+                if (!past && !full) {
+                  c.handleDayClick(key);
+                }
+              }}
               onMouseEnter={() => c.setHoverKey(key)}
               onMouseLeave={() => c.setHoverKey(null)}
               title={
@@ -103,12 +114,12 @@ export default function CalendarPanel({ c }) {
                 color: textColor,
                 border,
                 borderRadius: 8,
-                cursor: full ? "not-allowed" : "pointer",
+                cursor: past || full ? "not-allowed" : "pointer",
                 fontWeight: isEdge ? 800 : 500,
                 fontSize: 14,
                 position: "relative",
                 transition: "transform 120ms ease, filter 120ms ease",
-                opacity: full ? 0.9 : 1,
+                opacity: past ? 0.45 : full ? 0.9 : 1,
                 padding: "4px 3px 5px",
               }}
               className="flex flex-col items-center justify-start"
@@ -150,7 +161,7 @@ export default function CalendarPanel({ c }) {
                           padding: "2px 5px",
                         }}
                       >
-                        {entry.fullName} ({getCameraShortName(c.camera)})
+                      {entry.fullName} ({getCameraShortName(entry.camera)})
                       </span>
                     );
                   })}
@@ -172,7 +183,6 @@ export default function CalendarPanel({ c }) {
       >
         <LegendDot color={COLORS.sage} label="Available slots" />
         <LegendDot color={COLORS.mustard} label="My reservation" />
-        <LegendDot color={COLORS.orange} label="Fully booked" />
         <LegendDot color="#bde0fe" label="Name: waiting for confirmation" />
         <LegendDot color={COLORS.lavender} label="Name: booked" />
         <LegendDot color={COLORS.orange} label="This day is fully reserved or booked" />

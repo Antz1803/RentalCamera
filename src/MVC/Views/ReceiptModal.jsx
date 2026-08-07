@@ -145,7 +145,7 @@ export default function ReceiptModal({ c }) {
                   color: COLORS.ink || "#1C1917",
                 }}
               >
-                Lens &amp; Shutter
+                J&M
               </h2>
               <p
                 className="text-[11px] font-semibold tracking-widest uppercase mt-0.5"
@@ -154,7 +154,7 @@ export default function ReceiptModal({ c }) {
                   fontFamily: "system-ui, sans-serif",
                 }}
               >
-                Studio &amp; Equipment Rentals
+                 Hub &amp; Equipment Rentals
               </p>
             </div>
 
