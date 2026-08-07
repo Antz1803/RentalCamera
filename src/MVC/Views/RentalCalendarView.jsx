@@ -66,7 +66,7 @@ export default function RentalCalendarView() {
 /** Brand header (logo + shop name) shown at the top of the booking screen. */
 function Header() {
   return (
-    <div className="flex items-center gap-4 mb-8 -ml-50">
+    <div className="flex items-center gap-4 mb-8">
     <img
            src={logo}
            alt="J & M Rentals Hub"
