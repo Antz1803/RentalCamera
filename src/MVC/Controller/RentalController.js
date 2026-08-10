@@ -6,13 +6,11 @@
 import { useMemo, useState, useEffect } from "react";
 
 import {
-  CAMERAS,
-  DELIVERY_CHOICES,
+  ALL_DELIVERY_CHOICES,
   MAX_BOOKINGS_PER_DAY,
-  MEETUPS,
-  STORE_LOCATION,
   buildMonthGrid,
   countDays,
+  calculateRentalPrice,   
   fromKey,
   toKey,
   validateBooking,
@@ -21,7 +19,13 @@ import {
 
 import { db } from "../../firebase";
 import { ref, push } from "firebase/database";
-import { subscribeBookings } from "../../FirebaseService";
+import {
+  subscribeBookings,
+  subscribeCameras,
+  subscribeDeliveryChoices,
+  subscribeMeetupLocations,
+  subscribeStoreLocation,
+} from "../../FirebaseService";
 
 // Booking statuses that should count as "reserving" a date. Pending
 // bookings block the date too (not just Approved), otherwise two
@@ -31,6 +35,13 @@ const BLOCKING_STATUSES = ["Pending", "Approved"];
 
 export function useRentalController() {
   const initial = new Date();
+
+  // "YYYY-MM-DD" key for today, used to block selecting any date before it.
+  const todayKey = toKey(
+    initial.getFullYear(),
+    initial.getMonth(),
+    initial.getDate()
+  );
 
   // =========================
   // FIREBASE BOOKINGS
@@ -43,6 +54,53 @@ export function useRentalController() {
     const unsubscribe = subscribeBookings(setBookings);
     return unsubscribe;
   }, []);
+
+  // =========================
+  // FIREBASE-CONTROLLED SETTINGS
+  // (cameras, delivery choices, meet-up locations — all editable live
+  // from the MAUI staff app; these start out as sensible defaults so
+  // the page isn't empty before Firebase's first snapshot arrives.)
+  // =========================
+
+  const [cameras, setCameras] = useState([]);
+  const [deliveryChoicesEnabled, setDeliveryChoicesEnabled] = useState({});
+  const [meetupLocations, setMeetupLocations] = useState([]);
+  const [storeLocation, setStoreLocation] = useState("");
+
+useEffect(() => {
+  const unsubCameras = subscribeCameras((list) => {
+    setCameras(list);
+  });
+  const unsubDelivery = subscribeDeliveryChoices(setDeliveryChoicesEnabled);
+  const unsubMeetups = subscribeMeetupLocations((list) => {
+    setMeetupLocations(list);
+  });
+  const unsubStoreLocation = subscribeStoreLocation(setStoreLocation);
+  return () => {
+    unsubCameras();
+    unsubDelivery();
+    unsubMeetups();
+    unsubStoreLocation(); 
+  };
+}, []);
+
+  // Only the delivery choices staff have enabled (or left unconfigured
+  // — missing/undefined defaults to enabled, so the site doesn't
+  // silently lose delivery options before anyone's touched the
+  // settings), in the app's fixed display order.
+  const deliveryChoices = useMemo(
+    () =>
+      ALL_DELIVERY_CHOICES.filter(
+        (choice) => deliveryChoicesEnabled[choice] !== false
+      ),
+    [deliveryChoicesEnabled]
+  );
+
+  // Plain address strings, in the shape the Meet-Up dropdown expects.
+  const meetups = useMemo(
+    () => meetupLocations.map((loc) => loc.address),
+    [meetupLocations]
+  );
 
   const [paymentMethod, setPaymentMethod] = useState("Cash On Hand");
 
@@ -61,17 +119,39 @@ export function useRentalController() {
   // CUSTOMER / CAMERA STATE
   // =========================
 
-  const [fullName, setFullName] = useState("");
-  const [contact, setContact] = useState("");
-  const [camera, setCamera] = useState(CAMERAS[0].name);
+const [fullName, setFullName] = useState("");
+const [contact, setContact] = useState("");
+const [camera, setCamera] = useState("");
+
+  // If the live camera list changes (edited/removed via the MAUI app)
+  // and the currently selected camera no longer exists in it, fall back
+  // to the first available camera instead of leaving a stale selection.
+  useEffect(() => {
+    if (cameras.length === 0) return;
+    const stillExists = cameras.some((cam) => cam.name === camera);
+    if (!stillExists) {
+      setCamera(cameras[0].name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameras]);
 
   // =========================
   // DELIVERY STATE
   // =========================
 
-  const [deliveryChoice, setDeliveryChoiceRaw] = useState(DELIVERY_CHOICES[0]);
-  const [meetup, setMeetup] = useState(MEETUPS[0]);
-  const [customLocation, setCustomLocation] = useState("");
+const [deliveryChoice, setDeliveryChoiceRaw] = useState(ALL_DELIVERY_CHOICES[0]);
+const [meetup, setMeetup] = useState("");
+const [customLocation, setCustomLocation] = useState("");
+  // If the currently selected delivery choice gets disabled remotely
+  // (or was never a valid enabled option), fall back to whichever
+  // choice is actually enabled first.
+  useEffect(() => {
+    if (deliveryChoices.length === 0) return;
+    if (!deliveryChoices.includes(deliveryChoice)) {
+      setDeliveryChoiceRaw(deliveryChoices[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveryChoices]);
 
   // =========================
   // BOOKING / PAYMENT STATE
@@ -88,41 +168,23 @@ export function useRentalController() {
   const [uploadedPhotoName, setUploadedPhotoName] = useState(null);
 
   /**
-   * All active (Pending/Approved) bookings for the currently selected
-   * camera that cover the given date. A camera is owned in multiple
-   * units, so more than one customer can hold overlapping dates at once
-   * — this returns every one of them, not just the first match.
+   * All active (Pending/Approved) bookings that cover the given date,
+   * across every camera — not scoped to whichever camera is currently
+   * selected in the booking form. The calendar shows the shop's full
+   * schedule at a glance rather than one camera at a time.
    */
   function getBookingsForDate(dateKey) {
     return bookings.filter((booking) => {
       if (!BLOCKING_STATUSES.includes(booking.status)) return false;
 
-      return (
-        booking.camera === camera &&
-        dateKey >= booking.startDate &&
-        dateKey <= booking.endDate
-      );
-    });
-  }
-
-  /**
-   * All active (Pending/Approved) bookings for ANY camera that cover the
-   * given date. Used for display purposes — the calendar shows every
-   * reservation that day, regardless of which camera is currently
-   * selected in the form, so the customer can see the full picture.
-   */
-  function getAllBookingsForDate(dateKey) {
-    return bookings.filter((booking) => {
-      if (!BLOCKING_STATUSES.includes(booking.status)) return false;
       return dateKey >= booking.startDate && dateKey <= booking.endDate;
     });
   }
 
   /**
-   * Is the given date fully booked for the currently selected camera?
-   * A date becomes blocked once the number of active reservations
-   * covering it reaches the flat daily cap (MAX_BOOKINGS_PER_DAY) — this
-   * is independent of how many physical units of the camera exist.
+   * Is the given date fully booked? A date becomes blocked once the
+   * number of active reservations covering it (across all cameras)
+   * reaches the flat daily cap (MAX_BOOKINGS_PER_DAY).
    */
   function isDateBooked(dateKey) {
     const reservedCount = getBookingsForDate(dateKey).length;
@@ -130,35 +192,44 @@ export function useRentalController() {
   }
 
   /**
-   * Every active booking covering the given date, across ALL cameras,
-   * reduced to just what the calendar needs to render a per-renter name
-   * chip: their name, that specific booking's status (Pending vs
-   * Approved), and which camera it belongs to.
+   * Is the given date before today? Customers can book starting today
+   * onward — yesterday and earlier are never selectable, regardless of
+   * booking status.
+   */
+  function isPastDate(dateKey) {
+    return dateKey < todayKey;
+  }
+
+  /**
+   * Every active booking covering the given date, for the currently
+   * selected camera, reduced to just what the calendar needs to render
+   * a per-renter name chip: their name and that specific booking's
+   * status (Pending vs Approved).
    */
   function getBookingEntries(dateKey) {
-    return getAllBookingsForDate(dateKey).map((booking) => ({
+    return getBookingsForDate(dateKey).map((booking) => ({
       fullName: booking.fullName,
       status: booking.status,
-      camera: booking.camera,
     }));
   }
 
   /**
-   * Comma-separated renter names for the given date, across all cameras.
-   * Used for the calendar day cell's tooltip text.
+   * Comma-separated renter names for the given date, for the currently
+   * selected camera. Used for the calendar day cell's tooltip text.
    */
   function getBookingLabel(dateKey) {
-    const names = getAllBookingsForDate(dateKey).map((entry) => entry.fullName);
+    const names = getBookingEntries(dateKey).map((entry) => entry.fullName);
     return names.length ? names.join(", ") : undefined;
   }
 
   /**
-   * Status to display for the given date, across all cameras. If any of
-   * the overlapping active bookings is still Pending, the date is shown
-   * as Pending (awaiting confirmation); otherwise it's shown as Approved.
+   * Status to display for the given date, for the currently selected
+   * camera. If any of the overlapping active bookings is still Pending,
+   * the date is shown as Pending (awaiting confirmation); otherwise it's
+   * shown as Approved.
    */
   function getBookingStatus(dateKey) {
-    const matches = getAllBookingsForDate(dateKey);
+    const matches = getBookingsForDate(dateKey);
 
     if (matches.length === 0) return undefined;
     return matches.some((booking) => booking.status === "Pending")
@@ -166,9 +237,8 @@ export function useRentalController() {
       : "Approved";
   }
 
-
   /** Generate a short, human-friendly system reference number for a new booking. */
-  function generateSystemRef(prefix = "LSR") {
+  function generateSystemRef(prefix = "JRM") {
     const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
     return `${prefix}-${randomStr}`;
   }
@@ -223,16 +293,12 @@ export function useRentalController() {
 
   // =========================
   // NUMBER OF RENTAL DAYS
-  // While only a start date is picked (no end date yet), this shows 1 —
-  // "if you stop here, it's a 1-day rental" — so the price/duration
-  // update immediately on the first click instead of staying blank
-  // until a second date is chosen.
   // =========================
 
-  const days = useMemo(() => {
-    if (rangeStart && !rangeEnd) return 1;
-    return countDays(rangeStart, rangeEnd);
-  }, [rangeStart, rangeEnd]);
+  const days = useMemo(
+    () => countDays(rangeStart, rangeEnd),
+    [rangeStart, rangeEnd]
+  );
 
   // =========================
   // DELIVERY ADDRESS
@@ -240,11 +306,11 @@ export function useRentalController() {
   // =========================
 
   const deliveryAddress = useMemo(() => {
-    if (deliveryChoice === "Pick-Up") return STORE_LOCATION;
+    if (deliveryChoice === "Pick-Up") return storeLocation;
     if (deliveryChoice === "Meet-Up") return meetup;
     if (deliveryChoice === "Maxim") return customLocation;
     return "";
-  }, [deliveryChoice, meetup, customLocation]);
+  }, [deliveryChoice, meetup, customLocation, storeLocation]);
 
   /**
    * Switch delivery method and reset any dependent state (default meetup
@@ -257,7 +323,7 @@ export function useRentalController() {
     setErrors([]);
 
     if (choice === "Meet-Up" && !meetup) {
-      setMeetup(MEETUPS[0]);
+      setMeetup(meetups[0]);
     }
 
     if (choice === "Maxim") {
@@ -283,12 +349,12 @@ export function useRentalController() {
 
   /**
    * Handle a click on a calendar day. Implements the two-click
-   * start/end range selection, blocks booked dates, allows clearing by
-   * re-clicking the start date, and restarts selection if the chosen
-   * range would cross an already-booked date.
+   * start/end range selection, blocks booked and past dates, allows
+   * clearing by re-clicking the start date, and restarts selection if
+   * the chosen range would cross an already-booked date.
    */
   function handleDayClick(key) {
-    if (isDateBooked(key)) return;
+    if (isDateBooked(key) || isPastDate(key)) return;
 
     setConfirmed(false);
     setErrors([]);
@@ -300,12 +366,10 @@ export function useRentalController() {
       return;
     }
 
-    // Click the same start date again → confirm a 1-day rental. Previously
-    // this cleared the selection instead, which meant there was no way to
-    // actually finish booking exactly one day through the calendar —
-    // clearing is handled by the "Clear selected dates" button instead.
+    // Click the same start date again to clear selection
     if (key === rangeStart) {
-      setRangeEnd(rangeStart);
+      setRangeStart(null);
+      setRangeEnd(null);
       return;
     }
 
@@ -367,7 +431,7 @@ export function useRentalController() {
     }
 
     setErrors([]);
-    setSystemRefNo(generateSystemRef("LSR"));
+    setSystemRefNo(generateSystemRef("JRM"));
     setStep("payment");
   }
 
@@ -402,6 +466,7 @@ export function useRentalController() {
       setErrors(missing);
       return;
     }
+    const totalPrice = calculateRentalPrice(cameras, camera, days);
 
     const booking = {
       fullName,
@@ -410,6 +475,7 @@ export function useRentalController() {
       startDate: rangeStart,
       endDate: rangeEnd,
       days,
+      totalPrice,
       deliveryChoice,
       deliveryAddress,
       paymentMethod,
@@ -474,6 +540,7 @@ export function useRentalController() {
     // Booked-date lookups (Firebase-backed)
     bookings,
     isDateBooked,
+    isPastDate,
     getBookingLabel,
     getBookingEntries,
     getBookingStatus,
@@ -526,10 +593,10 @@ export function useRentalController() {
     handleBackToBooking,
     handleCloseReceipt,
 
-    // Options
-    cameras: CAMERAS,
-    meetups: MEETUPS,
-    deliveryChoices: DELIVERY_CHOICES,
+    // Options — now live from Firebase (editable via the MAUI staff app)
+    cameras,
+    meetups,
+    deliveryChoices,
 
     // Utility
     toKey,

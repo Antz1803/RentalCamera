@@ -155,7 +155,7 @@ export default function BookingFormPanel({ c }) {
                 marginTop: 5,
               }}
             >
-              ₱{getCameraPrice(c.camera).toLocaleString()}
+              ₱{getCameraPrice(c.cameras, c.camera).toLocaleString()}
             </div>
 
             <div style={{ marginTop: 6, color: COLORS.inkMuted, fontSize: 13 }}>
@@ -193,7 +193,7 @@ export default function BookingFormPanel({ c }) {
               marginTop: 5,
             }}
           >
-            ₱{calculateRentalPrice(c.camera, c.days).toLocaleString()}
+            ₱{calculateRentalPrice(c.cameras, c.camera, c.days).toLocaleString()}
           </div>
 
           <div
@@ -208,7 +208,7 @@ export default function BookingFormPanel({ c }) {
               <>
                 {c.days <= 2 ? (
                   <>
-                    Rate: <strong>₱{getCameraPrice(c.camera)}</strong> / day
+                    Rate: <strong>₱{getCameraPrice(c.cameras, c.camera)}</strong> / day
                     <br />
                     <span style={{ fontSize: 12 }}>
                       Book 3+ days to unlock the discounted rate for the whole rental.
@@ -216,7 +216,7 @@ export default function BookingFormPanel({ c }) {
                   </>
                 ) : (
                   <>
-                    Discounted rate: <strong>₱{getDiscountedDayPrice(c.camera)}</strong> / day
+                    Discounted rate: <strong>₱{getDiscountedDayPrice(c.cameras, c.camera)}</strong> / day
                     <br />
                     <span style={{ fontSize: 12 }}>
                       Applies to all {c.days} days — 3+ day bookings get this rate the whole way through.
@@ -226,7 +226,7 @@ export default function BookingFormPanel({ c }) {
                 <br />
                 <hr style={{ margin: "10px 0", borderColor: COLORS.border }} />
                 Total:{" "}
-                <strong>₱{calculateRentalPrice(c.camera, c.days).toLocaleString()}</strong>
+                <strong>₱{calculateRentalPrice(c.cameras, c.camera, c.days).toLocaleString()}</strong>
               </>
             ) : (
               "Select your rental dates."

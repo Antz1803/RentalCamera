@@ -23,7 +23,7 @@ import {
 } from "../Models/RentalModel";
 
 export default function ReceiptModal({ c }) {
-  const total = calculateRentalPrice(c.camera, c.days);
+  const total = calculateRentalPrice(c.cameras, c.camera, c.days);
   const receiptCardRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);

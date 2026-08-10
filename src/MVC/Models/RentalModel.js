@@ -1,29 +1,22 @@
 // Models/RentalModel.js
 // Pure data + pure functions only. No React, no state, no side effects.
+//
+// IMPORTANT: cameras, delivery choices, and meet-up locations are
+// controlled live from Firebase (editable from the MAUI staff app) and
+// flow in from RentalController.js as plain data. There are no local
+// defaults/fallbacks — the UI simply renders empty until Firebase's
+// first snapshot arrives.
+// Every function that used to reach into a static CAMERAS array now
+// takes a `cameras` array as its first argument instead.
+
 import SamplePhoto1 from "../../Images/Devfest2022.jpg";
 
-export const CAMERAS = [
-  {
-    name: "Sony A7IV w/ 24-70 GM",
-    shortName: "Sony A7IV",
-    price: 550,
-  },
-  {
-    name: "Canon R5 w/ 50mm f/1.2",
-    shortName: "Canon R5",
-    price: 650,
-  },
-  {
-    name: "Canon R6 w/ 24-105mm",
-    shortName: "Canon R6",
-    price: 500,
-  },
-  {
-    name: "Sony A7IV kit",
-    shortName: "Sony A7IV Kit",
-    price: 450,
-  },
-];
+// Every known delivery choice, in the order they should display when
+// enabled. Whether each one is actually offered right now is controlled
+// live via Firebase's settings/deliveryChoices node (see
+// RentalController.js) — this array is just the fixed set of choices the
+// UI knows how to render, not the live enabled/disabled state.
+export const ALL_DELIVERY_CHOICES = ["Pick-Up", "Meet-Up", "Maxim"];
 
 /**
  * Returns true if the given YYYY-MM-DD date is before today.
@@ -88,22 +81,6 @@ export const CAPTURED_PHOTOS = [
   },
 ];
 
-export const DELIVERY_CHOICES = ["Pick-Up", "Meet-Up", "Maxim"];
-
-// Fixed address used to fill the field when "Pick-Up" is chosen
-export const STORE_LOCATION =
-  "J & M Rentals Hub, Cebu IT Park, Cebu City, 6000 Cebu";
-
-export const MEETUPS = [
-  "City Mall, 7VXV+7QR, Natalio B. Bacalso Ave, Cebu City, 6000 Cebu",
-  "Emall, Natalio B. Bacalso Ave, Cebu City, 6000 Cebu",
-  "Ayala Center Cebu, Cebu City, 6000 Cebu",
-  "Ayala Central Bloc, 8WJ4+8VM, W Geonzon St, Cebu City, 6000 Cebu",
-  "Robinsons Galleria Cebu, Gen. Maxilom Avenue Extension, Sergio Osmeña Jr Blvd, Cebu City, 6000 Cebu",
-  "ParkMall, CSSEAZ, 168 Ouano Ave, Mandaue, 6014 Cebu",
-  "Fuente Osmeña Cir, Cebu City, 6000 Cebu",
-  "Plaza Independencia, 7WV4+73C, CSCR Tunl, Cebu City, 6000 Cebu",
-];
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -195,32 +172,40 @@ export function countDays(startKey, endKey) {
   return diff >= 0 ? diff + 1 : 0;
 }
 
-/** Look up the first-day rental price for a camera by name. Defaults to 0 if not found. */
-export function getCameraPrice(cameraName) {
-  const camera = CAMERAS.find((c) => c.name === cameraName);
+/**
+ * Look up the first-day rental price for a camera by name, from a given
+ * live cameras array (pass `c.cameras` from the controller). Defaults
+ * to 0 if not found.
+ */
+export function getCameraPrice(cameras, cameraName) {
+  const camera = cameras.find((c) => c.name === cameraName);
   return camera ? camera.price : 0;
 }
 
-/** Look up the short display name for a camera (e.g. "Sony A7IV" instead of "Sony A7IV w/ 24-70 GM"), for compact UI spots like calendar chips. Falls back to the full name if no shortName is set. */
-export function getCameraShortName(cameraName) {
-  const camera = CAMERAS.find((c) => c.name === cameraName);
+/**
+ * Look up the short display name for a camera (e.g. "Sony A7IV" instead
+ * of "Sony A7IV w/ 24-70 GM"), from a given live cameras array. Falls
+ * back to the full name if no shortName is set.
+ */
+export function getCameraShortName(cameras, cameraName) {
+  const camera = cameras.find((c) => c.name === cameraName);
   return camera?.shortName || cameraName;
 }
 
 /**
- * The discounted per-day rate for a specific camera, used for every
- * rental day from day 3 onward. Scales with that camera's own base
- * price (base price - 100, floored at 0) rather than a flat rate shared
- * across every camera — a pricier camera still discounts to a higher
- * per-day rate than a cheaper one.
+ * The discounted per-day rate for a specific camera (from a given live
+ * cameras array), used for every rental day once a booking reaches 3+
+ * days. Scales with that camera's own base price (base price - 100,
+ * floored at 0) rather than a flat rate shared across every camera.
  */
-export function getDiscountedDayPrice(cameraName) {
-  const basePrice = getCameraPrice(cameraName);
+export function getDiscountedDayPrice(cameras, cameraName) {
+  const basePrice = getCameraPrice(cameras, cameraName);
   return Math.max(basePrice - 100, 0);
 }
 
 /**
- * Calculate the total rental cost for a camera over a number of days.
+ * Calculate the total rental cost for a camera (from a given live
+ * cameras array) over a number of days.
  *
  * This is an all-or-nothing threshold, not a tiered/additive discount:
  *   - 1–2 days: every day is billed at the camera's full base price.
@@ -232,14 +217,14 @@ export function getDiscountedDayPrice(cameraName) {
  *   2 days → ₱550 + ₱550 = ₱1,100
  *   3 days → ₱450 × 3   = ₱1,350
  */
-export function calculateRentalPrice(cameraName, days) {
+export function calculateRentalPrice(cameras, cameraName, days) {
   if (!days || days <= 0) return 0;
 
   if (days <= 2) {
-    return getCameraPrice(cameraName) * days;
+    return getCameraPrice(cameras, cameraName) * days;
   }
 
-  return getDiscountedDayPrice(cameraName) * days;
+  return getDiscountedDayPrice(cameras, cameraName) * days;
 }
 
 /**

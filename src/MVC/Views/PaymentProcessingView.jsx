@@ -46,7 +46,7 @@ function Header() {
 
 export default function PaymentProcessingView({ c }) {
   const fileInputRef = useRef(null);
-  const totalPrice = calculateRentalPrice(c.camera, c.days);
+  const totalPrice = calculateRentalPrice(c.cameras, c.camera, c.days);
 
   return (
     <div
