@@ -44,7 +44,7 @@ export function useRentalController() {
     return unsubscribe;
   }, []);
 
-  const [paymentMethod, setPaymentMethod] = useState("Cash On Delivery");
+  const [paymentMethod, setPaymentMethod] = useState("Cash On Hand");
 
   // =========================
   // CALENDAR STATE
@@ -88,10 +88,10 @@ export function useRentalController() {
   const [uploadedPhotoName, setUploadedPhotoName] = useState(null);
 
   /**
-   * All active (Pending/Approved) bookings for the CURRENTLY SELECTED
-   * camera that cover the given date. Used only for the capacity check
-   * (isDateBooked) — whether the customer can actually reserve this date
-   * for the camera they're currently trying to book.
+   * All active (Pending/Approved) bookings for the currently selected
+   * camera that cover the given date. A camera is owned in multiple
+   * units, so more than one customer can hold overlapping dates at once
+   * — this returns every one of them, not just the first match.
    */
   function getBookingsForDate(dateKey) {
     return bookings.filter((booking) => {
@@ -119,11 +119,10 @@ export function useRentalController() {
   }
 
   /**
-   * Is the given date fully booked for the CURRENTLY SELECTED camera?
-   * A date becomes blocked once the number of active reservations for
-   * that specific camera covering it reaches the flat daily cap
-   * (MAX_BOOKINGS_PER_DAY) — this only ever looks at the selected
-   * camera, since booking out the Sony shouldn't block the Canon.
+   * Is the given date fully booked for the currently selected camera?
+   * A date becomes blocked once the number of active reservations
+   * covering it reaches the flat daily cap (MAX_BOOKINGS_PER_DAY) — this
+   * is independent of how many physical units of the camera exist.
    */
   function isDateBooked(dateKey) {
     const reservedCount = getBookingsForDate(dateKey).length;
@@ -133,8 +132,8 @@ export function useRentalController() {
   /**
    * Every active booking covering the given date, across ALL cameras,
    * reduced to just what the calendar needs to render a per-renter name
-   * chip: their name, that booking's status (Pending vs Approved), and
-   * which camera it's for (so the chip can be labeled correctly).
+   * chip: their name, that specific booking's status (Pending vs
+   * Approved), and which camera it belongs to.
    */
   function getBookingEntries(dateKey) {
     return getAllBookingsForDate(dateKey).map((booking) => ({
@@ -149,7 +148,7 @@ export function useRentalController() {
    * Used for the calendar day cell's tooltip text.
    */
   function getBookingLabel(dateKey) {
-    const names = getAllBookingsForDate(dateKey).map((b) => b.fullName);
+    const names = getAllBookingsForDate(dateKey).map((entry) => entry.fullName);
     return names.length ? names.join(", ") : undefined;
   }
 
@@ -167,17 +166,17 @@ export function useRentalController() {
       : "Approved";
   }
 
+
   /** Generate a short, human-friendly system reference number for a new booking. */
-  function generateSystemRef(prefix = "J&M") {
+  function generateSystemRef(prefix = "LSR") {
     const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
     return `${prefix}-${randomStr}`;
   }
 
   /**
    * Check whether any date in the (inclusive, order-agnostic) range
-   * between startKey and endKey is already booked (for the currently
-   * selected camera). Used to prevent a user from selecting a range that
-   * jumps over an unavailable date.
+   * between startKey and endKey is already booked. Used to prevent a
+   * user from selecting a range that jumps over an unavailable date.
    */
   function rangeCrossesBooked(startKey, endKey) {
     let startDate = fromKey(startKey);
@@ -224,12 +223,16 @@ export function useRentalController() {
 
   // =========================
   // NUMBER OF RENTAL DAYS
+  // While only a start date is picked (no end date yet), this shows 1 —
+  // "if you stop here, it's a 1-day rental" — so the price/duration
+  // update immediately on the first click instead of staying blank
+  // until a second date is chosen.
   // =========================
 
-  const days = useMemo(
-    () => countDays(rangeStart, rangeEnd),
-    [rangeStart, rangeEnd]
-  );
+  const days = useMemo(() => {
+    if (rangeStart && !rangeEnd) return 1;
+    return countDays(rangeStart, rangeEnd);
+  }, [rangeStart, rangeEnd]);
 
   // =========================
   // DELIVERY ADDRESS
@@ -297,10 +300,12 @@ export function useRentalController() {
       return;
     }
 
-    // Click the same start date again to clear selection
+    // Click the same start date again → confirm a 1-day rental. Previously
+    // this cleared the selection instead, which meant there was no way to
+    // actually finish booking exactly one day through the calendar —
+    // clearing is handled by the "Clear selected dates" button instead.
     if (key === rangeStart) {
-      setRangeStart(null);
-      setRangeEnd(null);
+      setRangeEnd(rangeStart);
       return;
     }
 
@@ -362,7 +367,7 @@ export function useRentalController() {
     }
 
     setErrors([]);
-    setSystemRefNo(generateSystemRef("J&M"));
+    setSystemRefNo(generateSystemRef("LSR"));
     setStep("payment");
   }
 

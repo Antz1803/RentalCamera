@@ -201,7 +201,6 @@ export function getCameraPrice(cameraName) {
   return camera ? camera.price : 0;
 }
 
-
 /** Look up the short display name for a camera (e.g. "Sony A7IV" instead of "Sony A7IV w/ 24-70 GM"), for compact UI spots like calendar chips. Falls back to the full name if no shortName is set. */
 export function getCameraShortName(cameraName) {
   const camera = CAMERAS.find((c) => c.name === cameraName);
@@ -209,24 +208,38 @@ export function getCameraShortName(cameraName) {
 }
 
 /**
- * Calculate the total rental cost for a camera over a number of days.
- * The first day is billed at the full base price; every additional day
- * is billed at a discounted rate (base price - 100).
+ * The discounted per-day rate for a specific camera, used for every
+ * rental day from day 3 onward. Scales with that camera's own base
+ * price (base price - 100, floored at 0) rather than a flat rate shared
+ * across every camera — a pricier camera still discounts to a higher
+ * per-day rate than a cheaper one.
  */
-export function calculateRentalPrice(cameraName, days) {
-  const basePrice = getCameraPrice(cameraName);
-
-  if (!days || days <= 0) return 0;
-
-  const additionalDayPrice = basePrice - 100;
-
-  return basePrice + (days - 1) * additionalDayPrice;
-}
-
-/** Get the discounted per-day rate (base price - 100, floored at 0) used for days after the first. */
-export function getAdditionalDayPrice(cameraName) {
+export function getDiscountedDayPrice(cameraName) {
   const basePrice = getCameraPrice(cameraName);
   return Math.max(basePrice - 100, 0);
+}
+
+/**
+ * Calculate the total rental cost for a camera over a number of days.
+ *
+ * This is an all-or-nothing threshold, not a tiered/additive discount:
+ *   - 1–2 days: every day is billed at the camera's full base price.
+ *   - 3+ days: every day (including days 1 and 2) is billed at that
+ *     camera's discounted rate instead — reaching the 3-day threshold
+ *     drops the rate for the whole booking, not just the extra days.
+ *
+ * e.g. Sony A7IV (base ₱550, discounted ₱450):
+ *   2 days → ₱550 + ₱550 = ₱1,100
+ *   3 days → ₱450 × 3   = ₱1,350
+ */
+export function calculateRentalPrice(cameraName, days) {
+  if (!days || days <= 0) return 0;
+
+  if (days <= 2) {
+    return getCameraPrice(cameraName) * days;
+  }
+
+  return getDiscountedDayPrice(cameraName) * days;
 }
 
 /**

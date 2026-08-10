@@ -9,7 +9,7 @@ import {
   formatDisplayDate,
   calculateRentalPrice,
   getCameraPrice,
-  getAdditionalDayPrice,
+  getDiscountedDayPrice,
 } from "../Models/RentalModel";
 import { Field, SectionLabel, inputStyle } from "./FormBits";
 
@@ -206,9 +206,23 @@ export default function BookingFormPanel({ c }) {
           >
             {c.days > 0 ? (
               <>
-                First day: <strong>₱{getCameraPrice(c.camera)}</strong>
-                <br />
-                Additional day(s): <strong>₱{getAdditionalDayPrice(c.camera)}</strong> / day
+                {c.days <= 2 ? (
+                  <>
+                    Rate: <strong>₱{getCameraPrice(c.camera)}</strong> / day
+                    <br />
+                    <span style={{ fontSize: 12 }}>
+                      Book 3+ days to unlock the discounted rate for the whole rental.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Discounted rate: <strong>₱{getDiscountedDayPrice(c.camera)}</strong> / day
+                    <br />
+                    <span style={{ fontSize: 12 }}>
+                      Applies to all {c.days} days — 3+ day bookings get this rate the whole way through.
+                    </span>
+                  </>
+                )}
                 <br />
                 <hr style={{ margin: "10px 0", borderColor: COLORS.border }} />
                 Total:{" "}
