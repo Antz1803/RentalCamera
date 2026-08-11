@@ -184,6 +184,7 @@ export default function CalendarPanel({ c }) {
         <LegendDot color="#EDEAE0" label="Past date" />
         <LegendDot color="#bde0fe" label="Name: waiting for confirmation" />
         <LegendDot color={COLORS.lavender} label="Name: booked" />
+        <p>Canon A3200 (1 Available) Please note that this are the available camera and just double check the day if its available.</p>
       </div>
     </div>
   );

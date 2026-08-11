@@ -7,7 +7,6 @@ import { useMemo, useState, useEffect } from "react";
 
 import {
   ALL_DELIVERY_CHOICES,
-  MAX_BOOKINGS_PER_DAY,
   buildMonthGrid,
   countDays,
   calculateRentalPrice,   
@@ -25,6 +24,7 @@ import {
   subscribeDeliveryChoices,
   subscribeMeetupLocations,
   subscribeStoreLocation,
+   subscribeMaxBookingsPerDay,
 } from "../../FirebaseService";
 
 // Booking statuses that should count as "reserving" a date. Pending
@@ -66,6 +66,7 @@ export function useRentalController() {
   const [deliveryChoicesEnabled, setDeliveryChoicesEnabled] = useState({});
   const [meetupLocations, setMeetupLocations] = useState([]);
   const [storeLocation, setStoreLocation] = useState("");
+  const [maxBookingsPerDay, setMaxBookingsPerDay] = useState(15);
 
 useEffect(() => {
   const unsubCameras = subscribeCameras((list) => {
@@ -76,11 +77,13 @@ useEffect(() => {
     setMeetupLocations(list);
   });
   const unsubStoreLocation = subscribeStoreLocation(setStoreLocation);
+  const unsubMaxBookings = subscribeMaxBookingsPerDay(setMaxBookingsPerDay);
   return () => {
     unsubCameras();
     unsubDelivery();
     unsubMeetups();
     unsubStoreLocation(); 
+    unsubMaxBookings();
   };
 }, []);
 
@@ -188,7 +191,7 @@ const [customLocation, setCustomLocation] = useState("");
    */
   function isDateBooked(dateKey) {
     const reservedCount = getBookingsForDate(dateKey).length;
-    return reservedCount >= MAX_BOOKINGS_PER_DAY;
+    return reservedCount >= maxBookingsPerDay;
   }
 
   /**
@@ -347,11 +350,12 @@ const [customLocation, setCustomLocation] = useState("");
     return key >= a && key <= b;
   }
 
-  /**
+/**
    * Handle a click on a calendar day. Implements the two-click
-   * start/end range selection, blocks booked and past dates, allows
-   * clearing by re-clicking the start date, and restarts selection if
-   * the chosen range would cross an already-booked date.
+   * start/end range selection, blocks booked and past dates, and
+   * restarts selection if the chosen range would cross an
+   * already-booked date. Tapping the same day twice confirms a 1-day
+   * booking (start === end) — use "Clear selected dates" to reset.
    */
   function handleDayClick(key) {
     if (isDateBooked(key) || isPastDate(key)) return;
@@ -366,10 +370,9 @@ const [customLocation, setCustomLocation] = useState("");
       return;
     }
 
-    // Click the same start date again to clear selection
+    // Click the same start date again to confirm a 1-day booking
     if (key === rangeStart) {
-      setRangeStart(null);
-      setRangeEnd(null);
+      setRangeEnd(key);
       return;
     }
 
@@ -597,6 +600,7 @@ const [customLocation, setCustomLocation] = useState("");
     cameras,
     meetups,
     deliveryChoices,
+    maxBookingsPerDay,
 
     // Utility
     toKey,

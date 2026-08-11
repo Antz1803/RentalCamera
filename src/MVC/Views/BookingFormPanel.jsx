@@ -10,6 +10,7 @@ import {
   calculateRentalPrice,
   getCameraPrice,
   getDiscountedDayPrice,
+  getCameraDeposit, 
 } from "../Models/RentalModel";
 import { Field, SectionLabel, inputStyle } from "./FormBits";
 
@@ -162,6 +163,36 @@ export default function BookingFormPanel({ c }) {
               First day rental
             </div>
           </div>
+          {getCameraDeposit(c.cameras, c.camera) > 0 && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: 12,
+                    borderRadius: 8,
+                    background: "#FBF3E4",
+                    border: "1px solid #E5CB94",
+                  }}
+                >
+                  <div style={{ fontWeight: 600, color: "#8A5A0C", fontSize: 13 }}>
+                    Security Deposit
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      color: "#B4790B",
+                      marginTop: 3,
+                    }}
+                  >
+                    ₱{getCameraDeposit(c.cameras, c.camera).toLocaleString()}
+                  </div>
+
+                  <div style={{ marginTop: 4, color: COLORS.inkMuted, fontSize: 12 }}>
+                    Refundable — held separately and not included in the rental cost below.
+                  </div>
+                </div>
+              )}
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
@@ -243,8 +274,8 @@ export default function BookingFormPanel({ c }) {
             lineHeight: 1.5,
           }}
         >
-          Tap a start day on the calendar, then an end day. Tap the start day
-          again to clear.
+            Tap a start day, then an end day to select a range. For a single day,
+  tap that day twice. Use "Clear selected dates" below to start over.
         </p>
 
         <button

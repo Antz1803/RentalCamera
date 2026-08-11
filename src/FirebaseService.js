@@ -57,6 +57,7 @@ export function subscribeCameras(callback) {
         name: data[key]?.name || "",
         shortName: data[key]?.shortName || data[key]?.name || "",
         price: Number(data[key]?.price || 0),
+        deposit: Number(data[key]?.deposit || 0),
       }));
 
       callback(cameras);
@@ -161,6 +162,33 @@ export function subscribeStoreLocation(callback) {
     (error) => {
       console.error("Failed to subscribe to store location:", error);
       callback("");
+    }
+  );
+}
+
+
+/**
+ * =========================
+ * MAX BOOKINGS PER DAY
+ * =========================
+ *
+ * Firebase:
+ *
+ * settings
+ *   └── maxBookingsPerDay: 15
+ */
+export function subscribeMaxBookingsPerDay(callback) {
+  const maxBookingsRef = ref(db, "settings/maxBookingsPerDay");
+
+  return onValue(
+    maxBookingsRef,
+    (snapshot) => {
+      const value = snapshot.val();
+      callback(typeof value === "number" && value > 0 ? value : 15);
+    },
+    (error) => {
+      console.error("Failed to subscribe to max bookings per day:", error);
+      callback(15);
     }
   );
 }

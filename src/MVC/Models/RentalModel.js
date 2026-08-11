@@ -19,6 +19,17 @@ import SamplePhoto1 from "../../Images/Devfest2022.jpg";
 export const ALL_DELIVERY_CHOICES = ["Pick-Up", "Meet-Up", "Maxim"];
 
 /**
+ * Look up the security deposit for a camera by name, from a given live
+ * cameras array. Shown to customers for transparency — this is separate
+ * from the rental price and is not included in calculateRentalPrice.
+ * Defaults to 0 if not found or not set.
+ */
+export function getCameraDeposit(cameras, cameraName) {
+  const camera = cameras.find((c) => c.name === cameraName);
+  return camera ? camera.deposit : 0;
+}
+
+/**
  * Returns true if the given YYYY-MM-DD date is before today.
  */
 export function isPastDate(dateKey) {
@@ -83,11 +94,6 @@ export const CAPTURED_PHOTOS = [
 
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-// Maximum number of active (Pending/Approved) reservations allowed per
-// camera per day — a flat daily cap, independent of how many physical
-// units of that camera you actually own.
-export const MAX_BOOKINGS_PER_DAY = 15;
 
 export const COLORS = {
   bg: "#F6EEDA",
