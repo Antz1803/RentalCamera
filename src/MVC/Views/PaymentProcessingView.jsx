@@ -12,7 +12,7 @@ import {
 } from "../Models/RentalModel";
 import { inputStyle } from "./FormBits";
 
-import logo from "/src/Images/Logo.svg";
+import logo from "/src/Images/Logo.png";
 import qrCode from "/src/Images/My-Qr-Code.jpg";
 
 /** Brand header (logo + shop name) shown at the top of this view. */
@@ -22,7 +22,7 @@ function Header() {
       <img
         src={logo}
         alt="J & M Rentals Hub"
-        style={{ width: 56, height: 56, flexShrink: 0 }}
+        style={{ width: 66, height: 66, flexShrink: 0 }}
       />
       <div>
         <div style={{ fontSize: 26, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>

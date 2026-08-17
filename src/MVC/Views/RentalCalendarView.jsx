@@ -12,7 +12,7 @@ import PaymentPanel from "./PaymentPanel";
 import PaymentProcessingView from "./PaymentProcessingView";
 import ReceiptModal from "./ReceiptModal";
 import RotateDeviceNotice from "./RotateDeviceNotice";
-import logo from "/src/Images/Logo.svg";
+import logo from "/src/Images/Logo.png";
 
 /**
  * Root view for the rental flow. Switches between the payment screen and
@@ -81,7 +81,7 @@ function Header() {
     <img
            src={logo}
            alt="J & M Rentals Hub"
-           style={{ width: 95, height: 95, flexShrink: 0 }}
+           style={{ width: 125, height: 125, flexShrink: 0 }}
          />
       <div>
         <div style={{ fontSize: 46, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>
