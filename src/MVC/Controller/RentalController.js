@@ -24,7 +24,8 @@ import {
   subscribeDeliveryChoices,
   subscribeMeetupLocations,
   subscribeStoreLocation,
-   subscribeMaxBookingsPerDay,
+  subscribeMaxBookingsPerDay,
+  subscribeHighlightPhotos,
 } from "../../FirebaseService";
 
 // Booking statuses that should count as "reserving" a date. Pending
@@ -57,9 +58,10 @@ export function useRentalController() {
 
   // =========================
   // FIREBASE-CONTROLLED SETTINGS
-  // (cameras, delivery choices, meet-up locations — all editable live
-  // from the MAUI staff app; these start out as sensible defaults so
-  // the page isn't empty before Firebase's first snapshot arrives.)
+  // (cameras, delivery choices, meet-up locations, store address, daily
+  // booking cap, and highlight-gallery photos — all editable live from
+  // the MAUI staff app; these start out empty and populate the moment
+  // Firebase's first snapshot arrives.)
   // =========================
 
   const [cameras, setCameras] = useState([]);
@@ -67,6 +69,7 @@ export function useRentalController() {
   const [meetupLocations, setMeetupLocations] = useState([]);
   const [storeLocation, setStoreLocation] = useState("");
   const [maxBookingsPerDay, setMaxBookingsPerDay] = useState(15);
+  const [highlightPhotos, setHighlightPhotos] = useState([]);
 
 useEffect(() => {
   const unsubCameras = subscribeCameras((list) => {
@@ -78,12 +81,14 @@ useEffect(() => {
   });
   const unsubStoreLocation = subscribeStoreLocation(setStoreLocation);
   const unsubMaxBookings = subscribeMaxBookingsPerDay(setMaxBookingsPerDay);
+  const unsubHighlightPhotos = subscribeHighlightPhotos(setHighlightPhotos);
   return () => {
     unsubCameras();
     unsubDelivery();
     unsubMeetups();
     unsubStoreLocation(); 
     unsubMaxBookings();
+    unsubHighlightPhotos();
   };
 }, []);
 
@@ -601,6 +606,7 @@ const [customLocation, setCustomLocation] = useState("");
     meetups,
     deliveryChoices,
     maxBookingsPerDay,
+    highlightPhotos,
 
     // Utility
     toKey,

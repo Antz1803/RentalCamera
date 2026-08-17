@@ -103,10 +103,10 @@ export default function ReceiptModal({ c }) {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             <span
-              className="text-[11px] font-semibold tracking-[0.2em] text-stone-300 uppercase"
+              className="text-[10px] font-semibold tracking-[0.2em] text-stone-300 uppercase"
               style={{ fontFamily: "system-ui, sans-serif" }}
             >
-              Reservation Voucher
+              Please download and keep your receipt as proof of your reservation.
             </span>
           </div>
           <button

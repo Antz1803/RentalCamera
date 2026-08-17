@@ -54,7 +54,7 @@ export default function PaymentPanel({ c }) {
 
       {/* Feature Highlight Card */}
       <div className="mt-3">
-        <CameraHighlightCard />
+        <CameraHighlightCard photos={c.highlightPhotos} />
       </div>
     </>
   );

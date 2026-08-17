@@ -192,3 +192,36 @@ export function subscribeMaxBookingsPerDay(callback) {
     }
   );
 }
+
+  /**
+ * Live highlight-photo gallery under "settings/highlightPhotos" —
+ * editable from the MAUI staff app (see FirebaseSettingsService.cs /
+ * GetHighlightPhotosAsync). Each entry is stored as
+ * { title, cameraModel, lens, settings, photographer, tag, imageUrl }
+ * keyed by its push id; calls back with an array of those objects (each
+ * tagged with `id`), or an empty array if the node is empty/missing.
+ */
+export function subscribeHighlightPhotos(callback) {
+  const highlightsRef = ref(db, "settings/highlightPhotos");
+ 
+  return onValue(highlightsRef, (snapshot) => {
+    const data = snapshot.val() || {};
+ 
+    const photos = Object.keys(data).map((key) => ({
+      id: key,
+      title: data[key]?.title ?? "",
+      cameraModel: data[key]?.cameraModel ?? "",
+      lens: data[key]?.lens ?? "",
+      settings: data[key]?.settings ?? "",
+      photographer: data[key]?.photographer ?? "",
+      tag: data[key]?.tag ?? "",
+      // Highlight photos are currently stored as raw Base64 JPEG data.
+      // CameraHighlightCard expects a complete image source in imageUrl.
+      imageUrl: data[key]?.imageBase64
+        ? `data:image/jpeg;base64,${data[key].imageBase64}`
+        : data[key]?.imageUrl ?? "",
+    }));
+ 
+    callback(photos);
+  });
+}

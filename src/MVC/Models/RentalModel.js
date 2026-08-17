@@ -1,15 +1,13 @@
 // Models/RentalModel.js
 // Pure data + pure functions only. No React, no state, no side effects.
 //
-// IMPORTANT: cameras, delivery choices, and meet-up locations are
-// controlled live from Firebase (editable from the MAUI staff app) and
-// flow in from RentalController.js as plain data. There are no local
-// defaults/fallbacks — the UI simply renders empty until Firebase's
-// first snapshot arrives.
+// IMPORTANT: cameras, delivery choices, meet-up locations, and highlight
+// photos are all controlled live from Firebase (editable from the MAUI
+// staff app) and flow in from RentalController.js as plain data. There
+// are no local defaults/fallbacks — the UI simply renders empty until
+// Firebase's first snapshot arrives.
 // Every function that used to reach into a static CAMERAS array now
 // takes a `cameras` array as its first argument instead.
-
-import SamplePhoto1 from "../../Images/Devfest2022.jpg";
 
 // Every known delivery choice, in the order they should display when
 // enabled. Whether each one is actually offered right now is controlled
@@ -44,54 +42,6 @@ export function isPastDate(dateKey) {
 
   return selectedDate < today;
 }
-
-// Gallery of sample photos captured using camera equipment
-export const CAPTURED_PHOTOS = [
-  {
-    id: 1,
-    title: "Portrait Narrow Hallway",
-    cameraModel: "Sony A7IV",
-    lens: "24-70mm f/2.8 GM II",
-    settings: "f/2.8 • 1/500s • ISO 100",
-    photographer: "@ Minervs",
-    imageUrl: SamplePhoto1,
-    tag: "Captured with Canon R5",
-  },
-  {
-    id: 2,
-    title: "Golden Hour Street Frame",
-    cameraModel: "Canon EOS R5",
-    lens: "RF 50mm f/1.2 L USM",
-    settings: "f/1.2 • 1/1250s • ISO 200",
-    photographer: "@lens_and_light",
-    imageUrl:
-      "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&w=800&q=80",
-    tag: "Captured with Canon R5",
-  },
-  {
-    id: 3,
-    title: "Low-Light Night Scene",
-    cameraModel: "Sony A7IV",
-    lens: "35mm f/1.4 GM",
-    settings: "f/1.4 • 1/160s • ISO 1600",
-    photographer: "@night_frames",
-    imageUrl:
-      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80",
-    tag: "Low Light Highlight",
-  },
-  {
-    id: 4,
-    title: "Film Simulation Profile",
-    cameraModel: "Fujifilm X-T5",
-    lens: "XF 16-55mm f/2.8",
-    settings: "f/4.0 • 1/800s • ISO 400",
-    photographer: "@fuji_vibes",
-    imageUrl:
-      "https://images.unsplash.com/photo-1502982720700-bfff97f2ecac?auto=format&fit=crop&w=800&q=80",
-    tag: "Fujifilm Color Test",
-  },
-];
-
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -206,7 +156,7 @@ export function getCameraShortName(cameras, cameraName) {
  */
 export function getDiscountedDayPrice(cameras, cameraName) {
   const basePrice = getCameraPrice(cameras, cameraName);
-  return Math.max(basePrice - 100, 0);
+  return Math.max(basePrice - 50, 0);
 }
 
 /**
