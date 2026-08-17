@@ -110,7 +110,7 @@ useEffect(() => {
     [meetupLocations]
   );
 
-  const [paymentMethod, setPaymentMethod] = useState("Cash On Hand");
+  const [paymentMethod, setPaymentMethod] = useState("Cash On Delivery");
 
   // =========================
   // CALENDAR STATE
