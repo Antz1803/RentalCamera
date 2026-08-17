@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { forceLongPolling, getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAdGqdSqmCvMKtn9FYJ0H66B4GfUBaPqA0",
@@ -12,5 +12,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+// Some networks/firewalls time out Firebase's WebSocket connection.
+// Long-polling uses regular HTTPS requests and is more reliable in those environments.
+forceLongPolling();
 
 export const db = getDatabase(app);
