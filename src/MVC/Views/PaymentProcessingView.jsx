@@ -18,27 +18,19 @@ import qrCode from "/src/Images/My-Qr-Code.jpg";
 /** Brand header (logo + shop name) shown at the top of this view. */
 function Header() {
   return (
-    <div className="flex items-center gap-4 mb-8">
+    <div className="brand-header">
       <img
         src={logo}
         alt="J & M Rentals Hub"
-        style={{ width: 66, height: 66, flexShrink: 0 }}
+        className="brand-header__logo"
       />
       <div>
-        <div style={{ fontSize: 26, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>
-          J & M
-        </div>
-        <div
-          style={{
-            fontSize: 13,
-            letterSpacing: "0.35em",
-            color: COLORS.inkMuted,
-            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-            marginTop: 2,
-          }}
-        >
-          RENTALS Hub
-        </div>
+        <h1 className="brand-header__name">J&amp;M</h1>
+        <p className="brand-header__subline">Camera rentals hub</p>
+      </div>
+      <div className="brand-header__badge ml-auto">
+        <span className="brand-header__badge-dot" />
+        Secure checkout
       </div>
     </div>
   );
@@ -57,9 +49,9 @@ export default function PaymentProcessingView({ c }) {
         fontFamily:
           "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif",
       }}
-      className="w-full flex justify-center px-4 py-8"
+      className="app-shell w-full flex justify-center px-4 py-6 sm:py-10"
     >
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <Header />
 
         <button
@@ -79,17 +71,16 @@ export default function PaymentProcessingView({ c }) {
           Back to booking details
         </button>
 
-        <div
-          style={{
-            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-            fontSize: 11,
-            letterSpacing: "0.25em",
-            color: COLORS.inkMuted,
-            textAlign: "center",
-            marginBottom: 16,
-          }}
-        >
-          PROCESSING PAYMENT
+        <div className="mb-6 rounded-2xl border border-[#ded4b4] bg-[#fdfbf3]/80 p-5 text-center shadow-sm">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.28em] text-[#8b7355]">
+            Almost there
+          </p>
+          <h1 className="m-0 font-serif text-2xl font-bold text-[#303722]">
+            Complete your reservation
+          </h1>
+          <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-[#7a7461]">
+            Select a payment method and send your details so we can confirm your camera booking.
+          </p>
         </div>
 
         {/* Payment Method Selector Dropdown */}
@@ -119,6 +110,7 @@ export default function PaymentProcessingView({ c }) {
         {/* Cash On Delivery Summary */}
         {c.paymentMethod === "Cash On Delivery" && (
           <div
+            className="section-card"
             style={{
               background: COLORS.card,
               border: `1px solid ${COLORS.border}`,
@@ -136,7 +128,7 @@ export default function PaymentProcessingView({ c }) {
                 fontSize: 20,
               }}
             >
-              Booking Summary
+              Reservation summary
             </div>
 
             <div style={{ marginBottom: 15 }}>

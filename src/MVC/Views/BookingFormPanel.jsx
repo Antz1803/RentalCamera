@@ -19,10 +19,13 @@ export default function BookingFormPanel({ c }) {
   return (
     <div className="grid md:grid-cols-2 gap-5 mb-6">
       <div
-        className="rounded-xl p-5 md:p-6"
+        className="section-card p-5 md:p-6"
         style={{ background: COLORS.card, border: `1px solid ${COLORS.border}` }}
       >
-        <SectionLabel icon={<Film size={15} />} text="Renter" />
+        <SectionLabel icon={<Film size={15} />} text="Renter details" />
+        <p className="-mt-2 mb-5 text-xs leading-relaxed text-[#8a816e]">
+          Tell us who will be enjoying the camera and how you would like to receive it.
+        </p>
 
         <Field label="Full name" icon={<User size={13} />}>
           <input
@@ -119,10 +122,13 @@ export default function BookingFormPanel({ c }) {
       </div>
 
       <div
-        className="rounded-xl p-5 md:p-6"
+        className="section-card p-5 md:p-6"
         style={{ background: COLORS.card, border: `1px solid ${COLORS.border}` }}
       >
-        <SectionLabel icon={<Camera size={15} />} text="Gear & Dates" />
+        <SectionLabel icon={<Camera size={15} />} text="Gear & dates" />
+        <p className="-mt-2 mb-5 text-xs leading-relaxed text-[#8a816e]">
+          Pick the right camera, then choose an available rental window.
+        </p>
 
         <Field label="Camera available">
           <select

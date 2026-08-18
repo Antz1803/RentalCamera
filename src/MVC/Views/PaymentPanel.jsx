@@ -3,7 +3,7 @@
 // "proceed to payment" submit button.
 
 import React from "react";
-import { AlignCenter, X } from "lucide-react";
+import { ArrowRight, ShieldCheck, X } from "lucide-react";
 import { COLORS } from "../Models/RentalModel";
 import CameraHighlightCard from "./CameraHighlightCard";
 
@@ -26,20 +26,25 @@ export default function PaymentPanel({ c }) {
         </div>
       )}
 
+      <div className="mb-3 mt-8 flex items-center justify-center gap-2 text-center text-[10px] font-bold uppercase tracking-[0.22em] text-[#8b7355]">
+        <ShieldCheck size={14} />
+        Safe &amp; simple reservation
+      </div>
+
       <button
         onClick={c.handleProceedToPayment}
+        className="primary-action w-full max-w-md"
         style={{
-          width: "40%",
           margin: "0 auto", 
           display: "block",  
-          padding: "16px",
-          borderRadius: 10,
+          padding: "17px 20px",
+          borderRadius: 14,
           background: COLORS.olive,
           color: "#F3EFD8",
           fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-          fontSize: 15,
-          letterSpacing: "0.06em",
-          fontWeight: 600,
+          fontSize: 14,
+          letterSpacing: "0.08em",
+          fontWeight: 800,
           border: "none",
           cursor: "pointer",
           transition: "background 150ms ease, transform 100ms ease",
@@ -49,7 +54,9 @@ export default function PaymentPanel({ c }) {
         onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.99)")}
         onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
       >
-        PROCEED TO SECURE PAYMENT
+        <span className="inline-flex items-center justify-center gap-2">
+          Continue to reservation <ArrowRight size={17} />
+        </span>
       </button>
 
       {/* Feature Highlight Card */}

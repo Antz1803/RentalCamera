@@ -48,20 +48,26 @@ export default function RentalCalendarView() {
           fontFamily:
             "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif",
         }}
-        className="w-full flex justify-center px-4 py-8"
+        className="app-shell w-full flex justify-center px-4 py-6 sm:py-10"
       >
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-5xl">
           <Header />
 
-          {/* Breakout wrapper: lets just the calendar be wider than the rest
-              of the form below it, regardless of the max-w-4xl container. */}
-          <div
-            className="flex justify-center"
-            style={{ width: "100vw", marginLeft: "50%", transform: "translateX(-50%)" }}
-          >
-            <div className="w-full max-w-8xl px-25">
-              <CalendarPanel c={c} />
+          <div className="mb-7">
+            <div className="mb-3 flex items-end justify-between gap-4">
+              <div>
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.28em] text-[#8b7355]">
+                  Your next adventure starts here
+                </p>
+                <h1 className="m-0 font-serif text-2xl font-bold tracking-tight text-[#303722] sm:text-3xl">
+                  Reserve your camera
+                </h1>
+              </div>
+              <span className="hidden text-right text-xs leading-5 text-[#7a7461] sm:block">
+                Choose your dates<br />and gear below
+              </span>
             </div>
+            <CalendarPanel c={c} />
           </div>
 
           <BookingFormPanel c={c} />
@@ -77,27 +83,17 @@ export default function RentalCalendarView() {
 /** Brand header (logo + shop name) shown at the top of the booking screen. */
 function Header() {
   return (
-    <div className="flex items-center gap-4 mb-8 ">
-    <img
-           src={logo}
-           alt="J & M Rentals Hub"
-           style={{ width: 125, height: 125, flexShrink: 0 }}
-         />
-      <div>
-        <div style={{ fontSize: 46, letterSpacing: "0.08em", fontWeight: 700, lineHeight: 1.1 }}>
-          J&M
+    <div className="brand-header">
+      <div className="brand-header__identity">
+        <img className="brand-header__logo" src={logo} alt="J & M Rentals Hub" />
+        <div>
+          <h1 className="brand-header__name">J&amp;M</h1>
+          <p className="brand-header__subline">Camera rentals hub</p>
         </div>
-        <div
-          style={{
-            fontSize: 13,
-            letterSpacing: "0.35em",
-            color: COLORS.inkMuted,
-            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-            marginTop: 2,
-          }}
-        >
-          RENTALS HUB
-        </div>
+      </div>
+      <div className="brand-header__badge">
+        <span className="brand-header__badge-dot" />
+        Online booking
       </div>
     </div>
   );
