@@ -52,3 +52,5 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JMRENTALCAMERA }}
           channelId: pr-${{ github.event.number }}
           projectId: jmrentalcamera
+          
+<!-- This workflow builds the RentalCamera application and deploys it to Firebase Hosting when changes are pushed to the main branch. For pull requests targeting the main branch, it creates a preview deployment. -->
